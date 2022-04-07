@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+<style>
+article {
+  margin: 0 auto;
+  width: 70%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+<section>
+<article>
+{{ trpl_plot_svg|safe }}
+</article>
+<article style="column-count: 3;">
+<ul>
+{% for tpl in tuples_by_triple_num %}
+<li><a href="/paper/{{ tpl[0] }}">{{ tpl[0] }} ({{ tpl[1]['triples']|length }})</a></li>
+{% endfor %}
+</ul>
+</article>
+</section>
+</body>
+</html>
