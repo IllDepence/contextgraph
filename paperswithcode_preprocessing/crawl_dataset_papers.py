@@ -10,7 +10,7 @@ base_path = '/home/ws/ys8950/dev/data/paperswithcode/data/'
 datasets_fn = 'datasets.json'
 datasets_ext_fn = 'datasets_ext.json'
 checkpoint_fn = 'datasets_ext_lastcheckpoint.json'
-checkpoint_interval = 1000
+checkpoint_interval = 100
 dataset_id_patt = re.compile(
     r'^\s*const\s*DATATABLE_PAPERS_FILTER_VALUE\s*=\s*\'(\d+)\';\s*$',
     re.M
@@ -79,7 +79,7 @@ for i, dataset in enumerate(datasets):
     # save checkpoint
     if checkpoint_interval > 0 and i % checkpoint_interval == 0:
         print('saving checkpoint')
-        with open(os.path.join(base_path, dataset), 'w') as f:
+        with open(os.path.join(base_path, checkpoint_fn), 'w') as f:
             json.dump(datasets_ext, f)
 
 
