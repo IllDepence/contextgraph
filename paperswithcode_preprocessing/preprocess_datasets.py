@@ -22,9 +22,6 @@ dsets_to_tasks = []
 dsets_to_pprs_fn = 'datasets_to_papers.jsonl'
 dsets_to_pprs = []
 
-in_dir = './'  # dev
-dsets_orig_fn = 'datasets_ext_dev.json'  # dev
-
 with open(os.path.join(in_dir, dsets_orig_fn)) as f:
     dsets_orig = json.load(f)
 
