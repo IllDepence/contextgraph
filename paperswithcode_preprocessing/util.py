@@ -1,6 +1,13 @@
 def url_to_slug(url):
     url_base = 'https://paperswithcode.com/'
-    slug = url[len(url_base):]
+    if url_base in url:
+        slug = url[len(url_base):]
+    elif url[0] == '/':
+        # in some contexts PWC data contains URLs
+        # w/o protocol and domain
+        slug = url[1:]
+    else:
+        raise
     return slug
 
 

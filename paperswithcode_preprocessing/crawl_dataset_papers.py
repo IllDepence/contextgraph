@@ -83,7 +83,9 @@ for i, dataset in enumerate(datasets):
             json.dump(datasets_ext, f)
 
 
+# convert from dict to list
+dataset_ext_list = list(datasets_ext.values())
 with open(os.path.join(base_path, datasets_ext_fn), 'w') as f:
-    json.dump(datasets_ext, f)
+    json.dump(dataset_ext_list, f)
 
 print('done')
