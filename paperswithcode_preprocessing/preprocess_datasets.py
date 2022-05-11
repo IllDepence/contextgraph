@@ -2,6 +2,7 @@
         datasets_ext.json (extended w/ using papers through crawling)
     generate
         datasets.jsonl
+        tasks_pre.jsonl (only id and name, description added from eval tables)
         datasets_to_papers.csv
         datasets_to_tasks.csv
 """
@@ -18,6 +19,8 @@ dsets_orig_fn = 'datasets_ext.json'
 dsets_orig = []
 dsets_new_fn = 'datasets.jsonl'
 dsets_new = []
+tasks_pre_fn = 'tasks_pre.jsonl'
+tasks_pre = dict()
 dsets_to_tasks_fn = 'datasets_to_tasks.csv'
 dsets_to_tasks = []
 dsets_to_pprs_fn = 'datasets_to_papers.csv'
@@ -51,6 +54,10 @@ for dset in dsets_orig:
     # build dataset->taks
     for task in dset['tasks']:
         task_id = url_to_pwc_id(task['url'])
+        tasks_pre[task_id] = {
+            'id': task_id,
+            'name': task['task']
+        }
         dsets_to_tasks.append(
             [dset_id, task_id]
         )
@@ -60,11 +67,17 @@ with open(os.path.join(out_dir, dsets_new_fn), 'w') as f:
         json.dump(dset, f)
         f.write('\n')
 
+with open(os.path.join(out_dir, tasks_pre_fn), 'w') as f:
+    for task_id, task in tasks_pre.items():
+        json.dump(task, f)
+        f.write('\n')
+
 with open(os.path.join(out_dir, dsets_to_pprs_fn), 'w') as f:
     csv_writer = csv.writer(
         f,
         delimiter=',',
-        quoting=csv.QUOTE_NONE)
+        quoting=csv.QUOTE_NONE
+    )
     csv_writer.writerow([
         'dataset_id',
         'paper_id',
@@ -76,7 +89,8 @@ with open(os.path.join(out_dir, dsets_to_tasks_fn), 'w') as f:
     csv_writer = csv.writer(
         f,
         delimiter=',',
-        quoting=csv.QUOTE_NONE)
+        quoting=csv.QUOTE_NONE
+    )
     csv_writer.writerow([
         'dataset_id',
         'task_id',
