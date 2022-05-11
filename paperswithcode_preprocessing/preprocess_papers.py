@@ -2,10 +2,11 @@
         papers.json
     generate
         papers.jsonl
-        tasks_to_papers.jsonl
-        methods_to_tasks.jsonl
+        tasks_to_papers.csv
+        methods_to_papers.csv
 """
 
+import csv
 import json
 import os
 from util import url_to_pwc_id
@@ -17,9 +18,9 @@ pprs_orig_fn = 'papers-with-abstracts.json'
 pprs_orig = []
 pprs_new_fn = 'papers.jsonl'
 pprs_new = []
-meths_to_pprs_fn = 'methods_to_papers.jsonl'
+meths_to_pprs_fn = 'methods_to_papers.csv'
 meths_to_pprs = []
-tasks_to_pprs_fn = 'tasks_to_papers.jsonl'
+tasks_to_pprs_fn = 'tasks_to_papers.csv'
 tasks_to_pprs = []
 meths_orig_fn = 'methods.json'
 meth_name_to_url = dict()
@@ -81,6 +82,13 @@ with open(os.path.join(out_dir, pprs_new_fn), 'w') as f:
         f.write('\n')
 
 with open(os.path.join(out_dir, meths_to_pprs_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE)
+    csv_writer.writerow([
+        'method_id',
+        'paper_id'
+    ])
     for (meth_id, ppr_id) in meths_to_pprs:
-        json.dump([meth_id, ppr_id], f)
-        f.write('\n')
+        csv_writer.writerow([meth_id, ppr_id])

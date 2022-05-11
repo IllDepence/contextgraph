@@ -2,10 +2,11 @@
         datasets_ext.json (extended w/ using papers through crawling)
     generate
         datasets.jsonl
-        datasets_to_papers.jsonl
-        datasets_to_tasks.jsonl
+        datasets_to_papers.csv
+        datasets_to_tasks.csv
 """
 
+import csv
 import json
 import os
 from util import url_to_pwc_id
@@ -17,9 +18,9 @@ dsets_orig_fn = 'datasets_ext.json'
 dsets_orig = []
 dsets_new_fn = 'datasets.jsonl'
 dsets_new = []
-dsets_to_tasks_fn = 'datasets_to_tasks.jsonl'
+dsets_to_tasks_fn = 'datasets_to_tasks.csv'
 dsets_to_tasks = []
-dsets_to_pprs_fn = 'datasets_to_papers.jsonl'
+dsets_to_pprs_fn = 'datasets_to_papers.csv'
 dsets_to_pprs = []
 
 with open(os.path.join(in_dir, dsets_orig_fn)) as f:
@@ -60,11 +61,25 @@ with open(os.path.join(out_dir, dsets_new_fn), 'w') as f:
         f.write('\n')
 
 with open(os.path.join(out_dir, dsets_to_pprs_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE)
+    csv_writer.writerow([
+        'dataset_id',
+        'paper_id',
+    ])
     for (dset_id, ppr_id) in dsets_to_pprs:
-        json.dump([dset_id, ppr_id], f)
-        f.write('\n')
+        csv_writer.writerow([dset_id, ppr_id])
 
 with open(os.path.join(out_dir, dsets_to_tasks_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE)
+    csv_writer.writerow([
+        'dataset_id',
+        'task_id',
+    ])
     for (dset_id, task_id) in dsets_to_tasks:
-        json.dump([dset_id, task_id], f)
-        f.write('\n')
+        csv_writer.writerow([dset_id, ppr_id])

@@ -2,10 +2,11 @@
         methods.json
     generate
         methods.jsonl
-        methods_to_collections.jsonl
+        methods_to_collections.csv
         method_areas.jsonl
 """
 
+import csv
 import json
 import os
 from util import url_to_pwc_id
@@ -17,7 +18,7 @@ meths_orig_fn = 'methods.json'
 meths_orig = []
 meths_new_fn = 'methods.jsonl'
 meths_new = []
-meths_to_colls_fn = 'methods_to_collections.jsonl'
+meths_to_colls_fn = 'methods_to_collections.csv'
 meths_to_colls = {}
 meth_areas_fn = 'method_areas.jsonl'
 meth_areas = {}
@@ -64,10 +65,17 @@ with open(os.path.join(out_dir, meths_new_fn), 'w') as f:
         f.write('\n')
 
 with open(os.path.join(out_dir, meths_to_colls_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE)
+    csv_writer.writerow([
+        'method_id',
+        'collection_id',
+    ])
     for meth, colls in meths_to_colls.items():
         for coll in colls:
-            json.dump([meth, coll], f)
-            f.write('\n')
+            csv_writer.writerow([meth, coll])
 
 with open(os.path.join(out_dir, meth_areas_fn), 'w') as f:
     for area_id, area in meth_areas.items():

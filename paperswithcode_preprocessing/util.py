@@ -1,3 +1,6 @@
+import re
+
+
 def url_to_slug(url):
     url_base = 'https://paperswithcode.com/'
     if url_base in url:
@@ -20,3 +23,15 @@ def url_to_pwc_id(url):
     return slug_to_pwc_id(
         url_to_slug(url)
     )
+
+
+def canonicalize_arxiv_id(aid):
+    """ Add slashes back to old arXiv IDs when they
+        have been removed for file name friendliness.
+    """
+
+    m = re.match(r'^([a-z\-]+)([0-9\.]+$)', aid)
+    if m:
+        return m.group(1) + '/' + m.group(2)
+    else:
+        return aid
