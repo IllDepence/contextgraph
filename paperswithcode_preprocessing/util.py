@@ -25,6 +25,14 @@ def url_to_pwc_id(url):
     )
 
 
+def name_to_slug(name):
+    return re.sub(
+        r'[^a-z0-9]',
+        '-',
+        name.lower()
+    )
+
+
 def canonicalize_arxiv_id(aid):
     """ Add slashes back to old arXiv IDs when they
         have been removed for file name friendliness.
