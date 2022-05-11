@@ -56,7 +56,8 @@ with open(os.path.join(out_dir, cit_fn), 'w') as f:
     csv_writer = csv.writer(
         f,
         delimiter=',',
-        quoting=csv.QUOTE_NONE)
+        quoting=csv.QUOTE_NONE
+    )
     csv_writer.writerow([
         'citing_arxiv_id',
         'cited_arxiv_id',

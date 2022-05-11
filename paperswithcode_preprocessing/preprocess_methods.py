@@ -68,7 +68,8 @@ with open(os.path.join(out_dir, meths_to_colls_fn), 'w') as f:
     csv_writer = csv.writer(
         f,
         delimiter=',',
-        quoting=csv.QUOTE_NONE)
+        quoting=csv.QUOTE_NONE
+    )
     csv_writer.writerow([
         'method_id',
         'collection_id',
