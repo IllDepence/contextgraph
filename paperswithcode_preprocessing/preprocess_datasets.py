@@ -82,4 +82,4 @@ with open(os.path.join(out_dir, dsets_to_tasks_fn), 'w') as f:
         'task_id',
     ])
     for (dset_id, task_id) in dsets_to_tasks:
-        csv_writer.writerow([dset_id, ppr_id])
+        csv_writer.writerow([dset_id, task_id])
