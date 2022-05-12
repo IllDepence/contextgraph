@@ -17,7 +17,7 @@
     * `preprocess_methods.py`
     * `preprocess_evaltables.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
     * `preprocess_papers.py`  (requires `preprocess_evaltables.py` output)
-    * `add_citation_network.py`
+    * `add_citation_network.py`  (requires `preprocess_papers.py` output)
 
 * `paperswithcode_X_unarXive/`
     * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
