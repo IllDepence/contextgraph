@@ -24,6 +24,7 @@ task_id_to_name = dict()
 task_name_to_id = dict()
 tasks_new_fn = 'tasks.jsonl'
 tasks_new = []
+tasks_to_subtasks_fn = 'tasks_to_subtasks.csv'
 modls_new_fn = 'models.jsonl'
 modls_new = dict()
 meths_to_dsets_fn = 'methods_to_datasets.csv'
@@ -54,17 +55,25 @@ with open(os.path.join(out_dir, tasks_preprocessed_fn)) as f:
 with open(os.path.join(in_dir, evals_orig_fn)) as f:
     evals = json.load(f)
 
-# extract
-# - task descriptions
-# - task hierarchy
-# - task categories
-# - models
-
 
 def recursively_process_eval_list(evals):
+    # start empty (returns empty at deepest level
+    # because evals will be an empty list)
     tasks = []
+    tasks_to_subtasks = []
     for evl in evals:
-        tasks += recursively_process_eval_list(evl['subtasks'])
+        # add accumulated info from deeper levels
+        sub_ts, sub_ts_to_subts = recursively_process_eval_list(
+            evl['subtasks']
+        )
+        tasks += sub_ts
+        tasks_to_subtasks += sub_ts_to_subts
+        # add task to subtask link from this level
+        for subtask_name in [subevl['task'] for subevl in evl['subtasks']]:
+            tasks_to_subtasks.append(
+                [evl['task'], subtask_name]
+            )
+        # add task from this level
         task = {
             'name': evl['task'],
             'description': evl['description'],
@@ -85,10 +94,10 @@ def recursively_process_eval_list(evals):
                 dset_tmp['mdls_tmp'].append(mdl_tmp)
             task['dsets_tmp'].append(dset_tmp)
         tasks.append(task)
-    return tasks
+    return tasks, tasks_to_subtasks
 
 
-eval_tasks = recursively_process_eval_list(evals)
+eval_tasks, tasks_to_subtasks = recursively_process_eval_list(evals)
 
 for eval_task in eval_tasks:
     # create task entity
@@ -96,6 +105,8 @@ for eval_task in eval_tasks:
     if task_id is None:
         new_slug = name_to_slug(eval_task['name'])
         task_id = 'pwc:task/' + new_slug
+        # add to map for later conversion of task to subtask links
+        task_name_to_id[eval_task['name']] = task_id
 
     task_new = {
         'id': task_id,
@@ -153,6 +164,14 @@ for eval_task in eval_tasks:
                 dset_id
             ])
 
+# replace names in task to subtask links with task IDs
+tasks_to_subtasks_id = []
+for link in tasks_to_subtasks:
+    tasks_to_subtasks_id.append([
+        task_name_to_id[link[0]],
+        task_name_to_id[link[1]]
+    ])
+tasks_to_subtasks = tasks_to_subtasks_id
 
 with open(os.path.join(out_dir, tasks_new_fn), 'w') as f:
     for task in tasks_new:
@@ -164,6 +183,19 @@ with open(os.path.join(out_dir, modls_new_fn), 'w') as f:
         modl['using_paper_titles'] = list(modl['using_paper_titles'])
         json.dump(modl, f)
         f.write('\n')
+
+with open(os.path.join(out_dir, tasks_to_subtasks_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE
+    )
+    csv_writer.writerow([
+        'task_id',
+        'subtask_id',
+    ])
+    for (task_id, subtask_id) in tasks_to_subtasks:
+        csv_writer.writerow([task_id, subtask_id])
 
 with open(os.path.join(out_dir, meths_to_dsets_fn), 'w') as f:
     csv_writer = csv.writer(
