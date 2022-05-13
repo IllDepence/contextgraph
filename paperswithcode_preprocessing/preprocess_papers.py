@@ -4,6 +4,7 @@
         papers.jsonl
         tasks_to_papers.csv
         methods_to_papers.csv
+        models_to_papers.csv  (removes models_to_papers_pre.csv)
     extend
         tasks.jsonl
 """
@@ -120,6 +121,10 @@ for ppr in pprs_orig:
             task_id,
             ppr_id
         ])
+    # TODO: build abs_url to ID dict
+
+# TODO: go through models_to_papers_pre.csv
+# and create a new list w/ links from model IDs to paper IDs
 
 # add new unique tasks to task list
 tasks.extend(tasks_new.values())

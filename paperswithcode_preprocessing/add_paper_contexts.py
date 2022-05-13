@@ -17,16 +17,35 @@ def match(pwc_dir, unarXive_dir):
     """ Match entities from Papers With Code in unarXive paper plaintexts.
     """
 
+    # papers to search in
+    pwc_pprs_fn = 'papers.jsonl'
+    # entities
     pwc_meths_fn = 'methods.jsonl'
     pwc_dsets_fn = 'datasets.jsonl'
     pwc_tasks_fn = 'tasks.jsonl'
     pwc_modls_fn = 'models.jsonl'
+    # links
+    # TODO: all the links
+    # output
+    contexts_fn = 'contexts.jsonl'
 
+    with open(os.path.join(pwc_dir, pwc_pprs_fn)) as f:
+        pprs = [json.loads(l) for l in f]
+        arxiv_pprs = [p for p in pprs if p['arxiv_id'] is not None]
     with open(os.path.join(pwc_dir, pwc_meths_fn)) as f:
         meths = [json.loads(l) for l in f]
-    # for each entity type:
-    # sort entity list by length of entity name,
-    # go through all papers
+    with open(os.path.join(pwc_dir, pwc_dsets_fn)) as f:
+        dsets = [json.loads(l) for l in f]
+    with open(os.path.join(pwc_dir, pwc_tasks_fn)) as f:
+        tasks = [json.loads(l) for l in f]
+    with open(os.path.join(pwc_dir, pwc_modls_fn)) as f:
+        modls = [json.loads(l) for l in f]
+
+    # sort by length to prioritize specific terms
+    meths = sorted(meths, key=lambda m: len(m['name']), reverse=True)
+    dsets = sorted(dsets, key=lambda d: len(d['name']), reverse=True)
+    tasks = sorted(tasks, key=lambda t: len(t['name']), reverse=True)
+    modls = sorted(modls, key=lambda m: len(m['name']), reverse=True)
     # write to contexts.jsonl
     # {
     #    'paper_arxiv_id': <ppr_aid>,
@@ -37,21 +56,10 @@ def match(pwc_dir, unarXive_dir):
     #    'context': <context_of_some_length>
     # }
 
-
-    # --- old code ---
-    all_method_names = sorted(all_method_names, key=len, reverse=True)
-    all_dataset_names = df_paper_abstracts_extended['datasets'].apply(
-        lambda x: [d['name'] for d in x]
-    ).explode().dropna().unique()
-    all_dataset_names = sorted(all_dataset_names, key=len, reverse=True)
-    all_task_names = df_paper_abstracts_extended[
-        'tasks'
-    ].explode().dropna().unique()
-    all_task_names = sorted(all_task_names, key=len, reverse=True)
-
-    print(f'{len(all_method_names):,} unique methods')
-    print(f'{len(all_dataset_names):,} datasets methods')
-    print(f'{len(all_task_names):,} tasks methods')
+    print(f'{len(meths):,} unique methods')
+    print(f'{len(dsets):,} datasets methods')
+    print(f'{len(tasks):,} tasks methods')
+    print(f'{len(modls):,} tasks models')
 
     @lru_cache(maxsize=None)
     def get_compiled_regext_patt(entity_name, flags):
@@ -77,9 +85,7 @@ def match(pwc_dir, unarXive_dir):
         'Google', 'seeds', 'iris', 'SSL', 'E-commerce', 'ACM'
     ]
 
-    for i, ppr in df_paper_abstracts_extended[
-        df_paper_abstracts_extended.arxiv_id.notna()
-    ].iterrows():
+    for i, ppr in enumerate(arxiv_pprs):
         if i % 10000 == 0:
             print(i)
 

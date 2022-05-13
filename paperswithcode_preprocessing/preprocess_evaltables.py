@@ -4,6 +4,7 @@
         tasks.jsonl  (removes tasks_pre.jsonl)
         models.jsonl
         methods_to_datasets.csv
+        models_to_papers_pre.csv
 """
 
 import csv
@@ -29,6 +30,8 @@ modls_new_fn = 'models.jsonl'
 modls_new = dict()
 meths_to_dsets_fn = 'methods_to_datasets.csv'
 meths_to_dsets = []
+modls_to_pprs_fn = 'models_to_papers_pre.csv'
+modls_to_pprs = []
 
 with open(os.path.join(out_dir, meths_processed_fn)) as f:
     meth_name_to_id = {
@@ -89,7 +92,8 @@ def recursively_process_eval_list(evals):
             for sota_row in dset['sota']['rows']:
                 mdl_tmp = {
                     'name': sota_row['model_name'],
-                    'paper_title': sota_row['paper_title']
+                    'paper_title': sota_row['paper_title'],
+                    'paper_url': sota_row['paper_url']
                 }
                 dset_tmp['mdls_tmp'].append(mdl_tmp)
             task['dsets_tmp'].append(dset_tmp)
@@ -163,6 +167,11 @@ for eval_task in eval_tasks:
                 task_id,
                 dset_id
             ])
+            # also create a link from model to paper
+            modls_to_pprs.append([
+                modl_id,
+                eval_modl['paper_url']  # matches to "url_abs" in ppr entities
+            ])
 
 # replace names in task to subtask links with task IDs
 tasks_to_subtasks_id = []
@@ -209,5 +218,18 @@ with open(os.path.join(out_dir, meths_to_dsets_fn), 'w') as f:
     ])
     for (meth_id, dset_id) in meths_to_dsets:
         csv_writer.writerow([meth_id, dset_id])
+
+with open(os.path.join(out_dir, modls_to_pprs_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE
+    )
+    csv_writer.writerow([
+        'model_id',
+        'paper_url',
+    ])
+    for (modl_id, ppr_url) in modls_to_pprs:
+        csv_writer.writerow([modl_id, ppr_url])
 
 os.remove(os.path.join(out_dir, tasks_preprocessed_fn))
