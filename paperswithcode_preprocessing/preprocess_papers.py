@@ -30,6 +30,11 @@ meth_name_to_url = dict()
 meth_full_name_to_url = dict()
 tasks_preprocessed_fn = 'tasks.jsonl'
 task_name_to_id = dict()
+modls_to_pprs_pre_fn = 'models_to_papers_pre.csv'
+modls_to_pprs_pre = []
+modls_to_pprs_fn = 'models_to_papers.csv'
+modls_to_pprs = []
+ppr_abs_url_to_id = dict()
 
 # build method lookup table
 with open(os.path.join(in_dir, meths_orig_fn)) as f:
@@ -56,6 +61,19 @@ with open(os.path.join(out_dir, tasks_preprocessed_fn)) as f:
         task['name']: task['id']
         for task in tasks
     }
+
+# get prerpocessed model to paper links
+with open(os.path.join(out_dir, modls_to_pprs_pre_fn)) as f:
+    csv_reader = csv.DictReader(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE
+    )
+    for row in csv_reader:
+        modls_to_pprs_pre.append([
+            row['model_id'],
+            row['paper_url']
+        ])
 
 with open(os.path.join(in_dir, pprs_orig_fn)) as f:
     pprs_orig = json.load(f)
@@ -121,10 +139,24 @@ for ppr in pprs_orig:
             task_id,
             ppr_id
         ])
-    # TODO: build abs_url to ID dict
+    # prepare mapping to finalize model to paper links
+    ppr_abs_url_to_id[ppr['url_abs']] = ppr_id
 
-# TODO: go through models_to_papers_pre.csv
-# and create a new list w/ links from model IDs to paper IDs
+# create final model to paper links
+num_non_linkable_pprs = 0
+for (modl_id, ppr_abs_url) in modls_to_pprs_pre:
+    ppr_id = ppr_abs_url_to_id.get(ppr_abs_url, None)
+    if ppr_id is not None:
+        modls_to_pprs.append([
+            modl_id,
+            ppr_id
+        ])
+    else:
+        num_non_linkable_pprs += 1
+
+print('- - - - - model reference data - - - - -')
+print((f'could not convert {num_non_linkable_pprs:,} '
+       f'of {len(modls_to_pprs_pre):,} model to paper links'))
 
 # add new unique tasks to task list
 tasks.extend(tasks_new.values())
@@ -174,3 +206,18 @@ with open(os.path.join(out_dir, tasks_to_pprs_fn), 'w') as f:
     ])
     for (task_id, ppr_id) in tasks_to_pprs:
         csv_writer.writerow([task_id, ppr_id])
+
+with open(os.path.join(out_dir, modls_to_pprs_fn), 'w') as f:
+    csv_writer = csv.writer(
+        f,
+        delimiter=',',
+        quoting=csv.QUOTE_NONE
+    )
+    csv_writer.writerow([
+        'model_id',
+        'paper_id'
+    ])
+    for (modl_id, ppr_id) in modls_to_pprs:
+        csv_writer.writerow([modl_id, ppr_id])
+
+os.remove(os.path.join(out_dir, modls_to_pprs_pre_fn))
