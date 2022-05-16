@@ -2,50 +2,91 @@
 """
 
 import argparse
+import csv
 import os
 import json
 import re
 import regex
-import pandas as pd
+from collections import OrderedDict
 from functools import lru_cache
 
-import sys
-sys.exit()  # WIP
+# import sys
+# sys.exit()  # WIP
+
+
+def load_pwc_arxiv_papers(pwc_dir):
+    pwc_pprs_fn = 'papers.jsonl'
+    with open(os.path.join(pwc_dir, pwc_pprs_fn)) as f:
+        pprs = [json.loads(l) for l in f]
+        arxiv_pprs = [p for p in pprs if p['arxiv_id'] is not None]
+    return arxiv_pprs
+
+
+def load_pwc_entities(pwc_dir):
+    pwc_meths_fn = 'methods.jsonl'
+    pwc_dsets_fn = 'datasets.jsonl'
+    pwc_tasks_fn = 'tasks.jsonl'
+    pwc_modls_fn = 'models.jsonl'
+    entity_dicts = []
+    for fn in [pwc_meths_fn, pwc_dsets_fn, pwc_tasks_fn, pwc_modls_fn]:
+        with open(os.path.join(pwc_dir, fn)) as f:
+            entity_dict_unsorted = OrderedDict()
+            for line in f:
+                entity = json.loads(line)
+                entity_dict_unsorted[entity['id']] = entity
+            # sort by length to prioritize specific terms
+            entity_dict = OrderedDict(
+                sorted(
+                    entity_dict_unsorted.items(),
+                    key=lambda e: len(e[1]['name'])
+                )
+            )
+            entity_dicts.append(entity_dict)
+    return entity_dicts
+
+
+def load_pwc_entity_links(pwc_dir):
+    meths_to_pprs_fn = 'methods_to_papers.csv'
+    dsets_to_pprs_fn = 'datasets_to_papers.csv'
+    tasks_to_pprs_fn = 'tasks_to_papers.csv'
+    modls_to_pprs_fn = 'models_to_papers.csv'
+    links = []
+    for fn in [meths_to_pprs_fn, dsets_to_pprs_fn,
+               tasks_to_pprs_fn, modls_to_pprs_fn]:
+        with open(os.path.join(pwc_dir, fn)) as f:
+            csv_reader = csv.DictReader(
+                f,
+                delimiter=',',
+                quoting=csv.QUOTE_NONE
+            )
+            headers = csv_reader.fieldnames
+            links_single = dict()
+            for row in csv_reader:
+                entity_id = row[headers[0]]
+                ppr_id = row[headers[1]]
+                if ppr_id not in links_single:
+                    links_single[ppr_id] = []
+                links_single[ppr_id].append(entity_id)
+            links.append(links_single)
+    return links
 
 
 def match(pwc_dir, unarXive_dir):
     """ Match entities from Papers With Code in unarXive paper plaintexts.
     """
 
-    # papers to search in
-    pwc_pprs_fn = 'papers.jsonl'
-    # entities
-    pwc_meths_fn = 'methods.jsonl'
-    pwc_dsets_fn = 'datasets.jsonl'
-    pwc_tasks_fn = 'tasks.jsonl'
-    pwc_modls_fn = 'models.jsonl'
-    # links
-    # TODO: all the links
+    # load papers to search in
+    pwc_arxiv_pprs = load_pwc_arxiv_papers(pwc_dir)
+    # load entities
+    meths, dsets, tasks, modls = load_pwc_entities(pwc_dir)
+    # load links
+    pprs_to_meths, \
+        pprs_to_dsets, \
+        pprs_to_tasks, \
+        pprs_to_modls = load_pwc_entity_links(pwc_dir)
     # output
     contexts_fn = 'contexts.jsonl'
 
-    with open(os.path.join(pwc_dir, pwc_pprs_fn)) as f:
-        pprs = [json.loads(l) for l in f]
-        arxiv_pprs = [p for p in pprs if p['arxiv_id'] is not None]
-    with open(os.path.join(pwc_dir, pwc_meths_fn)) as f:
-        meths = [json.loads(l) for l in f]
-    with open(os.path.join(pwc_dir, pwc_dsets_fn)) as f:
-        dsets = [json.loads(l) for l in f]
-    with open(os.path.join(pwc_dir, pwc_tasks_fn)) as f:
-        tasks = [json.loads(l) for l in f]
-    with open(os.path.join(pwc_dir, pwc_modls_fn)) as f:
-        modls = [json.loads(l) for l in f]
-
-    # sort by length to prioritize specific terms
-    meths = sorted(meths, key=lambda m: len(m['name']), reverse=True)
-    dsets = sorted(dsets, key=lambda d: len(d['name']), reverse=True)
-    tasks = sorted(tasks, key=lambda t: len(t['name']), reverse=True)
-    modls = sorted(modls, key=lambda m: len(m['name']), reverse=True)
     # write to contexts.jsonl
     # {
     #    'paper_arxiv_id': <ppr_aid>,
@@ -56,10 +97,18 @@ def match(pwc_dir, unarXive_dir):
     #    'context': <context_of_some_length>
     # }
 
+    print(f'{len(pwc_arxiv_pprs):,} papers to get contexts from')
     print(f'{len(meths):,} unique methods')
-    print(f'{len(dsets):,} datasets methods')
-    print(f'{len(tasks):,} tasks methods')
-    print(f'{len(modls):,} tasks models')
+    print(f'{len(dsets):,} unique datasets')
+    print(f'{len(tasks):,} unique tasks')
+    print(f'{len(modls):,} unique models')
+    print(f'method-paper links for {len(pprs_to_meths):,} papers')
+    print(f'dataset-paper links {len(pprs_to_dsets):,} papers')
+    print(f'tasks-paper links for {len(pprs_to_tasks):,} papers')
+    print(f'model-paper links for {len(pprs_to_modls):,} papers')
+
+    import sys
+    sys.exit()  # WIP
 
     @lru_cache(maxsize=None)
     def get_compiled_regext_patt(entity_name, flags):
@@ -85,7 +134,7 @@ def match(pwc_dir, unarXive_dir):
         'Google', 'seeds', 'iris', 'SSL', 'E-commerce', 'ACM'
     ]
 
-    for i, ppr in enumerate(arxiv_pprs):
+    for i, ppr in enumerate(pwc_arxiv_pprs):
         if i % 10000 == 0:
             print(i)
 
