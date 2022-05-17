@@ -1,4 +1,10 @@
-""" Match entities from Papers With Code in unarXive paper plaintexts
+""" From
+        papers.jsonl
+    and
+        the unarXive plain text paper TXTs
+    generate
+        contexts_used.jsonl
+        contexts_mentioned.jsonl  (experimental)
 """
 
 import argparse

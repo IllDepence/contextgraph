@@ -65,7 +65,7 @@ with open(os.path.join(out_dir, cit_fn), 'w') as f:
         'citing_arxiv_id',
         'cited_arxiv_id',
         'citation_marker_uuid',
-        'cited_pwc_id',
+        'citing_pwc_id',
         'cited_pwc_id'
     ])
     for edge in citation_edges:
