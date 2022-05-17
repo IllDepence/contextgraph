@@ -18,6 +18,9 @@
     * `preprocess_evaltables.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
     * `preprocess_papers.py`  (requires `preprocess_evaltables.py` output)
     * `add_citation_network.py`  (requires `preprocess_papers.py` output)
+    * `add_paper_contexts.py` (requires output of all of the above)
+        * requires module `regex` (not `re`)
+        * example use on icarus: `$ python3 add_paper_contexts.py --pwc_dir /home/ls3data/datasets/paperswithcode/preprocessed/ --unarxive_dir /opt/unarXive/unarXive-2020/papers/`
 
 * `paperswithcode_X_unarXive/`
     * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
@@ -27,9 +30,11 @@
 # TODOs
 
 * preprocess paperswithcode to
-    * jsonl file per given entity type (method, dataset, task, paper)
-    * extra entities (model, method-collection, collection-area)
-    * mappings using pwc URL slugs between entities
+    * jsonl file per given entity type (method, dataset, task, paper) ✔
+    * extra entities (model, method-collection, collection-area) ✔
+    * mappings using pwc URL slugs between entities ✔
 * extend data with unarXive
     * citation graph ✔
-    * extracted contexts
+    * extracted contexts ✔
+* extend data with Kaggle arXiv metadata
+    * paper abstract, publication year, ...
