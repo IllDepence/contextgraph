@@ -38,7 +38,8 @@ def load_pwc_entities(pwc_dir):
             entity_dict = OrderedDict(
                 sorted(
                     entity_dict_unsorted.items(),
-                    key=lambda e: len(e[1]['name'])
+                    key=lambda e: len(e[1]['name']),
+                    reverse=True
                 )
             )
             entity_dicts.append(entity_dict)
@@ -78,43 +79,36 @@ def match(pwc_dir, unarXive_dir):
     # load papers to search in
     pwc_arxiv_pprs = load_pwc_arxiv_papers(pwc_dir)
     # load entities
-    meths, dsets, tasks, modls = load_pwc_entities(pwc_dir)
+    meths_dict, dsets_dict, tasks_dict, modls_dict = load_pwc_entities(pwc_dir)
+    meths_list = meths_dict.values()
+    dsets_list = dsets_dict.values()
+    tasks_list = tasks_dict.values()
+    modls_list = modls_dict.values()
     # load links
     pprs_to_meths, \
         pprs_to_dsets, \
         pprs_to_tasks, \
         pprs_to_modls = load_pwc_entity_links(pwc_dir)
     # output
-    contexts_fn = 'contexts.jsonl'
-
-    # write to contexts.jsonl
-    # {
-    #    'paper_arxiv_id': <ppr_aid>,
-    #    'paper_pwc_id': <ppr_pid>,
-    #    'entity_id': <entity_id>,
-    #    'entity_offset': [<from>,<to>],
-    #    'context_offset': [<from>,<to>],
-    #    'context': <context_of_some_length>
-    # }
+    contexts_used_fn = 'contexts_used.jsonl'
+    contexts_used = []
+    contexts_mentioned_fn = 'contexts_mentioned.jsonl'
+    contexts_mentioned = []
 
     print(f'{len(pwc_arxiv_pprs):,} papers to get contexts from')
-    print(f'{len(meths):,} unique methods')
-    print(f'{len(dsets):,} unique datasets')
-    print(f'{len(tasks):,} unique tasks')
-    print(f'{len(modls):,} unique models')
+    print(f'{len(meths_list):,} unique methods')
+    print(f'{len(dsets_list):,} unique datasets')
+    print(f'{len(tasks_list):,} unique tasks')
+    print(f'{len(modls_list):,} unique models')
     print(f'method-paper links for {len(pprs_to_meths):,} papers')
     print(f'dataset-paper links {len(pprs_to_dsets):,} papers')
     print(f'tasks-paper links for {len(pprs_to_tasks):,} papers')
     print(f'model-paper links for {len(pprs_to_modls):,} papers')
 
-    import sys
-    sys.exit()  # WIP
-
     @lru_cache(maxsize=None)
     def get_compiled_regext_patt(entity_name, flags):
         return regex.compile(
             (
-             r'(?<!>)'   # prevent re-tagging of (*_used) as (*_named)
              r'(?<=\W)'  # expect a preceding non-word character
              r'({})'     # the entity name itself
              r'(?=(\W|s\W|ed\W))'  # expect a succeeding non-word character or
@@ -134,24 +128,24 @@ def match(pwc_dir, unarXive_dir):
         'Google', 'seeds', 'iris', 'SSL', 'E-commerce', 'ACM'
     ]
 
+    # go through all papers
     for i, ppr in enumerate(pwc_arxiv_pprs):
-        if i % 10000 == 0:
+        if i % 1000 == 0:
             print(i)
 
-        # get entity names to match
-        methods = ppr['methods']
-        datasets = ppr['datasets']
-        method_names = sorted(
-            [m['name'] for m in methods],
-            key=len,
-            reverse=True
-        )
-        dataset_names = sorted(
-            [d['name'] for d in datasets],
-            key=len,
-            reverse=True
-        )
-        task_names = sorted(ppr['tasks'], key=len, reverse=True)
+        # get entities to match
+        ppr_meths = [
+            meths_dict[mid] for mid in pprs_to_meths.get(ppr['id'], [])
+        ]
+        ppr_dsets = [
+            dsets_dict[did] for did in pprs_to_dsets.get(ppr['id'], [])
+        ]
+        ppr_tasks = [
+            tasks_dict[tid] for tid in pprs_to_tasks.get(ppr['id'], [])
+        ]
+        ppr_modls = [
+            modls_dict[mid] for mid in pprs_to_modls.get(ppr['id'], [])
+        ]
 
         # get plaintext
         paper_fn_id = ppr['arxiv_id'].replace('/', '')
@@ -162,66 +156,91 @@ def match(pwc_dir, unarXive_dir):
         with open(paper_path) as f:
             paper_text = f.read()
 
-        annotation_types = {
-            'method_used': method_names,
-            'dataset_used': dataset_names,
-            'task_used': task_names,
-            'method_named': all_method_names,
-            'dataset_named': all_dataset_names,
-            'task_named': all_task_names
+        entity_types = {
+            'method_used': ppr_meths,
+            'dataset_used': ppr_dsets,
+            'task_used': ppr_tasks,
+            'model_used': ppr_modls,
+            'method': meths_list,
+            'dataset': dsets_list,
+            'task': tasks_list,
+            'model': modls_list,
         }
-        debug_used_entities = {
-            'method_names': method_names,
-            'dataset_names': dataset_names,
-            'task_names': task_names
-        }
-        subs_per_entity = dict()
-        for tag_name, entity_names in annotation_types.items():
-            for entity_name in entity_names:
+
+        # go through all entities (1) of the paper and (2) in all of pwc
+        for etype, entities in entity_types.items():
+            for entity in entities:
                 # skip the few two character entities that do not
                 # include numbers (i.e. not T5)
-                if len(entity_name) < 3 and not re.search(r'\d', entity_name):
+                if len(entity['name']) < 3 \
+                        and not re.search(r'\d', entity['name']):
+                    continue
+                # skip overly ambiguous entity names
+                if entity['name'] in super_naughty_entity_names:
                     continue
                 # try to match as much as possible case insensitive
-                if re.search(r'\d', entity_name):
+                # (set regex flags accordingly)
+                if re.search(r'\d', entity['name']):
                     regex_flags = re.I  # insensitive if there's a number in it
                 elif (
                     # match case sensitive if all upper case (NICE, SECOND)
-                    entity_name.upper() == entity_name or
+                    entity['name'].upper() == entity['name'] or
                     # entity names that resemble common words (ZeRO, ReCoRD)
-                    entity_name in naughty_entity_names
+                    entity['name'] in naughty_entity_names
                 ):
                     regex_flags = 0
                 else:
                     regex_flags = re.I
-                patt = get_compiled_regext_patt(entity_name, regex_flags)
-                paper_text, num_subs = patt.subn(
-                    r'<{0}>\1</{0}>'.format(tag_name),
-                    paper_text
-                )
-                if '_used' in tag_name or num_subs > 0:
-                    # only write debug info for entities to expect
-                    # or those additionally found (mentioned but not used)
-                    subs_per_entity[tag_name + '///' + entity_name] = num_subs
+                patt = get_compiled_regext_patt(entity['name'], regex_flags)
+                for m in patt.finditer(paper_text):
+                    entity_offset_start = m.start()
+                    entity_offset_end = m.end()
+                    # FIXME: more sophisticated extraction
+                    #        (e.g. +/-50 words or +/-1 sentence)
+                    context_offset_start = max(
+                        entity_offset_start-100,
+                        0
+                    )
+                    context_offset_end = min(
+                        entity_offset_end+100,
+                        len(paper_text)
+                    )
+                    context = paper_text[
+                        context_offset_start:context_offset_end
+                    ]
+                    # create new context entity
+                    context_entity = {
+                       'paper_arxiv_id': ppr['arxiv_id'],
+                       'paper_pwc_id': ppr['id'],
+                       'entity_id': entity['id'],
+                       'entity_offset_in_context': [
+                           entity_offset_start-context_offset_start,
+                           entity_offset_end-context_offset_end
+                        ],
+                       'entity_offset_in_paper': [
+                           entity_offset_start,
+                           entity_offset_end
+                        ],
+                       'context_offset_in_paper': [
+                           context_offset_start,
+                           context_offset_end
+                        ],
+                       'context': context
+                    }
+                    if '_used' in etype:
+                        contexts_used.append(context_entity)
+                    else:
+                        contexts_mentioned.append(context_entity)
 
-        paper_out_fn = f'{paper_fn_id}.txt'
-        paper_out_path = os.path.join(out_dir, paper_out_fn)
-        with open(paper_out_path, 'w') as f:
-            f.write(paper_text)
-
-        # write additional triple information
-        triples, debug_info = build_triples(ppr)
-        triple_fn = f'{paper_fn_id}_rels.tsv'
-        triple_path = os.path.join(out_dir, triple_fn)
-        with open(triple_path, 'w') as f:
-            for trpl in triples:
-                f.write('\t'.join(trpl) + '\n')
-        debug_info_fn = f'{paper_fn_id}_debug.json'
-        debug_info_path = os.path.join(out_dir, debug_info_fn)
-        debug_info['subs_per_entity'] = subs_per_entity
-        debug_info['used_entities_pwc'] = debug_used_entities
-        with open(debug_info_path, 'w') as f:
-            json.dump(debug_info, f)
+    # persist contexts
+    with open(os.path.join(pwc_dir, contexts_used_fn), 'w') as f:
+        for context in contexts_used:
+            json.dump(context, f)
+            f.write('\n')
+    with open(os.path.join(pwc_dir, contexts_mentioned_fn), 'w') as f:
+        for context in contexts_mentioned:
+            json.dump(context, f)
+            f.write('\n')
 
 
 if __name__ == '__main__':
