@@ -11,7 +11,12 @@
 
 # Code
 
-* `paperswithcode_preprocessing/`
+* **exploration** `exploration/`
+    * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
+    * `pwc_matching_poc.py` - match entities from Papers With Code in unarXive paper plaintexts
+    * `matching_result_ui/` - web UI to show matching results
+
+* **preprocessing** `preprocessing/`
     * `crawl_dataset_papers.py`
     * `preprocess_datasets.py`  (requires `crawl_dataset_papers.py` output)
     * `preprocess_methods.py`
@@ -21,12 +26,13 @@
     * `add_paper_contexts.py` (requires output of all of the above)
         * requires module `regex` (not `re`)
         * example use on icarus: `$ python3 add_paper_contexts.py --pwc_dir /home/ls3data/datasets/paperswithcode/preprocessed/ --unarxive_dir /opt/unarXive/unarXive-2020/papers/`
-    * `load_graph`
 
-* `paperswithcode_X_unarXive/`
-    * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
-    * `pwc_matching_poc.py` - match entities from Papers With Code in unarXive paper plaintexts
-    * `matching_result_ui/` - web UI to show matching results
+* **visualization** `visualization/`
+    * ...
+
+* **prediction** `prediction/`
+    * ...
+
 
 # TODOs
 
