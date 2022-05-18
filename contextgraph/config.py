@@ -9,7 +9,8 @@ pwc_api_base_url = ('https://paperswithcode.com/api/internal/papers/'
                     '?format=json&paperdataset__dataset_id=')
 
 # unarXive data
-unarXive_db_path = '/opt/unarXive/unarXive-2020/papers/refs.db'
+unarxive_paper_dir = '/opt/unarXive/unarXive-2020/papers/'
+unarxive_db_fn = 'refs.db'
 
 # preprocessed graph data
 graph_data_dir = '/home/ls3data/datasets/paperswithcode/preprocessed/'

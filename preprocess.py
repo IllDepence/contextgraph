@@ -21,3 +21,5 @@ cg_prep.preprocess_evaltables.preprocess_evaltables()
 cg_prep.preprocess_papers.preprocess_papers()
 # add citation network
 cg_prep.add_citation_network.add_citation_network()
+# add paper contexts
+cg_prep.add_paper_contexts.add_paper_contexts()

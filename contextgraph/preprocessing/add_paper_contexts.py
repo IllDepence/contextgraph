@@ -7,7 +7,6 @@
         contexts_mentioned.jsonl  (experimental)
 """
 
-import argparse
 import csv
 import os
 import json
@@ -15,12 +14,10 @@ import re
 import regex
 from collections import OrderedDict
 from functools import lru_cache
-
-# import sys
-# sys.exit()  # WIP
+import contextgraph.config as cg_config
 
 
-def load_pwc_arxiv_papers(pwc_dir):
+def _load_pwc_arxiv_papers(pwc_dir):
     pwc_pprs_fn = 'papers.jsonl'
     with open(os.path.join(pwc_dir, pwc_pprs_fn)) as f:
         pprs = [json.loads(l) for l in f]
@@ -28,7 +25,7 @@ def load_pwc_arxiv_papers(pwc_dir):
     return arxiv_pprs
 
 
-def load_pwc_entities(pwc_dir):
+def _load_pwc_entities(pwc_dir):
     pwc_meths_fn = 'methods.jsonl'
     pwc_dsets_fn = 'datasets.jsonl'
     pwc_tasks_fn = 'tasks.jsonl'
@@ -52,7 +49,7 @@ def load_pwc_entities(pwc_dir):
     return entity_dicts
 
 
-def load_pwc_entity_links(pwc_dir):
+def _load_pwc_entity_links(pwc_dir):
     meths_to_pprs_fn = 'methods_to_papers.csv'
     dsets_to_pprs_fn = 'datasets_to_papers.csv'
     tasks_to_pprs_fn = 'tasks_to_papers.csv'
@@ -78,14 +75,19 @@ def load_pwc_entity_links(pwc_dir):
     return links
 
 
-def match(pwc_dir, unarXive_dir):
+def add_paper_contexts():
     """ Match entities from Papers With Code in unarXive paper plaintexts.
     """
 
+    graph_data_dir = cg_config.graph_data_dir
+    unarXive_paper_dir = cg_config.unarxive_paper_dir
+
     # load papers to search in
-    pwc_arxiv_pprs = load_pwc_arxiv_papers(pwc_dir)
+    pwc_arxiv_pprs = _load_pwc_arxiv_papers(graph_data_dir)
     # load entities
-    meths_dict, dsets_dict, tasks_dict, modls_dict = load_pwc_entities(pwc_dir)
+    meths_dict, dsets_dict, tasks_dict, modls_dict = _load_pwc_entities(
+        graph_data_dir
+    )
     meths_list = meths_dict.values()
     dsets_list = dsets_dict.values()
     tasks_list = tasks_dict.values()
@@ -94,7 +96,7 @@ def match(pwc_dir, unarXive_dir):
     pprs_to_meths, \
         pprs_to_dsets, \
         pprs_to_tasks, \
-        pprs_to_modls = load_pwc_entity_links(pwc_dir)
+        pprs_to_modls = _load_pwc_entity_links(graph_data_dir)
     # output
     contexts_used_fn = 'contexts_used.jsonl'
     contexts_used = []
@@ -156,7 +158,7 @@ def match(pwc_dir, unarXive_dir):
         # get plaintext
         paper_fn_id = ppr['arxiv_id'].replace('/', '')
         paper_fn = f'{paper_fn_id}.txt'
-        paper_path = os.path.join(unarXive_dir, paper_fn)
+        paper_path = os.path.join(unarXive_paper_dir, paper_fn)
         if not os.path.isfile(paper_path):
             continue
         with open(paper_path) as f:
@@ -239,31 +241,11 @@ def match(pwc_dir, unarXive_dir):
                         contexts_mentioned.append(context_entity)
 
     # persist contexts
-    with open(os.path.join(pwc_dir, contexts_used_fn), 'w') as f:
+    with open(os.path.join(graph_data_dir, contexts_used_fn), 'w') as f:
         for context in contexts_used:
             json.dump(context, f)
             f.write('\n')
-    with open(os.path.join(pwc_dir, contexts_mentioned_fn), 'w') as f:
+    with open(os.path.join(graph_data_dir, contexts_mentioned_fn), 'w') as f:
         for context in contexts_mentioned:
             json.dump(context, f)
             f.write('\n')
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description=('script that extracts entity mention contexts'
-                     'unarXive paper plain texts')
-    )
-    parser.add_argument(
-        '--pwc_dir',
-        help=('path to the directory with the preprocessed Papers With Code '
-              'JSON files'),
-        required=True
-    )
-    parser.add_argument(
-        '--unarxive_dir',
-        help='path to the directory with the unarXive plain text files',
-        required=True
-    )
-    args = parser.parse_args()
-    match(args.pwc_dir, args.unarxive_dir)

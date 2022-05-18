@@ -18,7 +18,10 @@ def add_citation_network():
     pprs_preprocessed_fn = cg_config.graph_pprs_fn
     graph_data_dir = cg_config.graph_data_dir
     cit_fn = cg_config.graph_ppr_to_ppr_fn
-    unarXive_db = cg_config.unarXive_db_path
+    unarXive_db_path = os.path.join(
+        cg_config.unarxive_paper_dir,
+        cg_config.unarxive_db_fn
+    )
 
     # determine all relevant arXiv IDs
     # and build a mapping from arXiv IDs to PWC IDs
@@ -31,7 +34,7 @@ def add_citation_network():
     pwc_arxiv_ids = set(arxiv_id_to_pwc_id.keys())
 
     # fetch citations from unarXive inside relevant arXiv IDs
-    db_con = sqlite3.connect(unarXive_db)
+    db_con = sqlite3.connect(unarXive_db_path)
     db_cur = db_con.cursor()
     db_cur.execute('''
         select
