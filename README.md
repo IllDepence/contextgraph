@@ -21,7 +21,7 @@
     * `add_paper_contexts.py` (requires output of all of the above)
         * requires module `regex` (not `re`)
         * example use on icarus: `$ python3 add_paper_contexts.py --pwc_dir /home/ls3data/datasets/paperswithcode/preprocessed/ --unarxive_dir /opt/unarXive/unarXive-2020/papers/`
-    * `load_graph*
+    * `load_graph`
 
 * `paperswithcode_X_unarXive/`
     * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
