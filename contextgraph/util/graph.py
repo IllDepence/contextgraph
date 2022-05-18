@@ -2,9 +2,13 @@ import csv
 import os
 import json
 import networkx as nx
+from contextgraph import config
 
 
-def load_nodes(pwc_dir):
+def _load_node_tuples(data_dir):
+    """ loads nodes as (<id>, <properties>) tuples
+    """
+
     pprs_fn = 'papers.jsonl'
     meths_fn = 'methods.jsonl'
     dsets_fn = 'datasets.jsonl'
@@ -12,14 +16,17 @@ def load_nodes(pwc_dir):
     modls_fn = 'models.jsonl'
     entity_tuples = []
     for fn in [pprs_fn, meths_fn, dsets_fn, tasks_fn, modls_fn]:
-        with open(os.path.join(pwc_dir, fn)) as f:
+        with open(os.path.join(data_dir, fn)) as f:
             for line in f:
                 entity = json.loads(line)
                 entity_tuples.append((entity['id'], entity))
     return entity_tuples
 
 
-def load_edges(pwc_dir):
+def _load_edge_tuples(data_dir):
+    """ loads edges as (<id>, <properties>) tuples
+    """
+
     # used_in_paper
     meths_to_pprs_fn = 'methods_to_papers.csv'
     dsets_to_pprs_fn = 'datasets_to_papers.csv'
@@ -49,7 +56,7 @@ def load_edges(pwc_dir):
         header_idxs = [0, 1]
         if edge_type == 'cites':
             header_idxs = [3, 4]
-        with open(os.path.join(pwc_dir, fn)) as f:
+        with open(os.path.join(data_dir, fn)) as f:
             csv_reader = csv.DictReader(
                 f,
                 delimiter=',',
@@ -69,19 +76,11 @@ def load_edges(pwc_dir):
     return edges
 
 
-def load_graph(pwc_dir):
-    node_tuples = load_nodes(pwc_dir)
-    edge_tuples = load_edges(pwc_dir)
+def load_graph():
+    data_dir = config.graph_data_dir
+    node_tuples = _load_node_tuples(data_dir)
+    edge_tuples = _load_edge_tuples(data_dir)
     G = nx.DiGraph()
     G.add_nodes_from(node_tuples)
     G.add_edges_from(edge_tuples)
-
-    # example
-    print(G.out_degree('pwc:method/lstm'))
-
-    return G  # return for use in ipython
-
-
-if __name__ == '__main__':
-    pwc_dir = '/home/ls3data/datasets/paperswithcode/preprocessed/'
-    G = load_graph(pwc_dir)
+    return G
