@@ -11,7 +11,7 @@ import csv
 import json
 import os
 from contextgraph import config as cg_config
-from contextgraph.util import preprocessing as name_to_slug
+from contextgraph.util.preprocessing import name_to_slug
 
 
 def preprocess_evaltables():
@@ -33,7 +33,7 @@ def preprocess_evaltables():
     modls_new = dict()
     meths_to_dsets_fn = cg_config.graph_meths_to_dsets_fn
     meths_to_dsets = []
-    modls_to_pprs_fn = cg_config.graph_modls_to_pprs_fn
+    modls_to_pprs_fn = cg_config.graph_modls_to_pprs_pre_fn
     modls_to_pprs = []
 
     with open(os.path.join(out_dir, meths_processed_fn)) as f:

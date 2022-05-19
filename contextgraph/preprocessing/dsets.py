@@ -27,7 +27,7 @@ def preprocess_datasets():
 
     with open(os.path.join(
         cg_config.pwc_data_dir,
-        cg_config.pwc_datasets_ext_fn
+        cg_config.pwc_dsets_ext_fn
     )) as f:
         dsets_orig = json.load(f)
 

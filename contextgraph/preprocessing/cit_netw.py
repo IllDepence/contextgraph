@@ -11,7 +11,7 @@ import json
 import os
 import sqlite3
 import contextgraph.config as cg_config
-from util import canonicalize_arxiv_id
+from contextgraph.util.preprocessing import canonicalize_arxiv_id
 
 
 def add_citation_network():

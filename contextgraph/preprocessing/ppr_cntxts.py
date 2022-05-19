@@ -75,7 +75,7 @@ def _load_pwc_entity_links(pwc_dir):
     return links
 
 
-def add_paper_contexts():
+def add_paper_contexts(verbose=False):
     """ Match entities from Papers With Code in unarXive paper plaintexts.
     """
 
@@ -103,15 +103,16 @@ def add_paper_contexts():
     contexts_mentioned_fn = 'contexts_mentioned.jsonl'
     contexts_mentioned = []
 
-    print(f'{len(pwc_arxiv_pprs):,} papers to get contexts from')
-    print(f'{len(meths_list):,} unique methods')
-    print(f'{len(dsets_list):,} unique datasets')
-    print(f'{len(tasks_list):,} unique tasks')
-    print(f'{len(modls_list):,} unique models')
-    print(f'method-paper links for {len(pprs_to_meths):,} papers')
-    print(f'dataset-paper links {len(pprs_to_dsets):,} papers')
-    print(f'tasks-paper links for {len(pprs_to_tasks):,} papers')
-    print(f'model-paper links for {len(pprs_to_modls):,} papers')
+    if verbose:
+        print(f'{len(pwc_arxiv_pprs):,} papers to get contexts from')
+        print(f'{len(meths_list):,} unique methods')
+        print(f'{len(dsets_list):,} unique datasets')
+        print(f'{len(tasks_list):,} unique tasks')
+        print(f'{len(modls_list):,} unique models')
+        print(f'method-paper links for {len(pprs_to_meths):,} papers')
+        print(f'dataset-paper links {len(pprs_to_dsets):,} papers')
+        print(f'tasks-paper links for {len(pprs_to_tasks):,} papers')
+        print(f'model-paper links for {len(pprs_to_modls):,} papers')
 
     @lru_cache(maxsize=None)
     def get_compiled_regext_patt(entity_name, flags):
@@ -138,7 +139,7 @@ def add_paper_contexts():
 
     # go through all papers
     for i, ppr in enumerate(pwc_arxiv_pprs):
-        if i % 1000 == 0:
+        if i % 1000 == 0 and verbose:
             print(i)
 
         # get entities to match

@@ -16,7 +16,7 @@ from contextgraph import config as cg_config
 from contextgraph.util.preprocessing import url_to_pwc_id, name_to_slug
 
 
-def preprocess_papers():
+def preprocess_papers(verbose=False):
     in_dir = cg_config.pwc_data_dir
     out_dir = cg_config.graph_data_dir
 
@@ -51,11 +51,12 @@ def preprocess_papers():
         meth_name_to_url[meth['name']] = meth['url']
         meth_full_name_to_url[meth['full_name']] = meth['url']
 
-    print('- - - - - method reference data - - - - -')
-    print(f'{len(dups[0])} duplicate full method names:')
-    print(', '.join(dups[0]))
-    print(f'{len(dups[1])} duplicate method names:')
-    print(', '.join(dups[1]))
+    if verbose:
+        print('- - - - - method reference data - - - - -')
+        print(f'{len(dups[0])} duplicate full method names:')
+        print(', '.join(dups[0]))
+        print(f'{len(dups[1])} duplicate method names:')
+        print(', '.join(dups[1]))
 
     # build task lookup dict
     with open(os.path.join(out_dir, tasks_preprocessed_fn)) as f:
@@ -157,22 +158,24 @@ def preprocess_papers():
         else:
             num_non_linkable_pprs += 1
 
-    print('- - - - - model reference data - - - - -')
-    print((f'could not convert {num_non_linkable_pprs:,} '
-           f'of {len(modls_to_pprs_pre):,} model to paper links'))
+    if verbose:
+        print('- - - - - model reference data - - - - -')
+        print((f'could not convert {num_non_linkable_pprs:,} '
+               f'of {len(modls_to_pprs_pre):,} model to paper links'))
 
     # add new unique tasks to task list
     tasks.extend(tasks_new.values())
 
-    print('- - - - - method association - - - - -')
-    print(f'{len(invalid_meth_refs)} invalid method references:')
-    print(', '.join(invalid_meth_refs))
+    if verbose:
+        print('- - - - - method association - - - - -')
+        print(f'{len(invalid_meth_refs)} invalid method references:')
+        print(', '.join(invalid_meth_refs))
 
-    print('- - - - - task association - - - - -')
-    print(f'{len(known_task_refs)} known task references')
-    print(f'{len(tasks_new)} newly created tasks')
-    print(f'{len(id_shiftet_tasks)} task with shifted ID:')
-    print(', '.join(id_shiftet_tasks))
+        print('- - - - - task association - - - - -')
+        print(f'{len(known_task_refs)} known task references')
+        print(f'{len(tasks_new)} newly created tasks')
+        print(f'{len(id_shiftet_tasks)} task with shifted ID:')
+        print(', '.join(id_shiftet_tasks))
 
     with open(os.path.join(out_dir, pprs_new_fn), 'w') as f:
         for ppr in pprs_new:

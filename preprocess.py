@@ -1,25 +1,32 @@
 import os
 import contextgraph.config as cg_config
-import contextgraph.preprocessing as cg_prep
+from contextgraph.preprocessing.crawler import crawl_dataset_papers
+from contextgraph.preprocessing.dsets import preprocess_datasets
+from contextgraph.preprocessing.meths import preprocess_methods
+from contextgraph.preprocessing.evaltbls import preprocess_evaltables
+from contextgraph.preprocessing.pprs import preprocess_papers
+from contextgraph.preprocessing.cit_netw import add_citation_network
+from contextgraph.preprocessing.ppr_cntxts import add_paper_contexts
+
 
 # check if dataset to paper information is already cralwed
 # and if not, run crawler
 ext_dsets_fp = os.path.join(
     cg_config.pwc_data_dir,
-    cg_config.pwc_datasets_ext_fn
+    cg_config.pwc_dsets_ext_fn
 )
 if not os.path.isfile(ext_dsets_fp):
-    cg_prep.crawler.crawl_dataset_papers()
+    crawl_dataset_papers()
 
-# preprocess data sets
-cg_prep.preprocess_datasets.preprocess_datasets()
-# preprocess methods
-cg_prep.preprocess_methods.preprocess_methods()
-# preprocess evaluation tables
-cg_prep.preprocess_evaltables.preprocess_evaltables()
-# preprocess papers
-cg_prep.preprocess_papers.preprocess_papers()
-# add citation network
-cg_prep.add_citation_network.add_citation_network()
-# add paper contexts
-cg_prep.add_paper_contexts.add_paper_contexts()
+print('preprocessing data sets')
+preprocess_datasets()
+print('preprocessing methods')
+preprocess_methods()
+print('preprocessing evaluation tables')
+preprocess_evaltables()
+print('preprocessing papers')
+preprocess_papers()
+print('adding citation network')
+add_citation_network()
+print('adding paper contexts')
+add_paper_contexts()
