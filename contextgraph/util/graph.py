@@ -139,6 +139,37 @@ def _load_edge_tuples():
     return edge_tuples
 
 
+def _get_entity_coocurrence_edges(G):
+    cooc_edges = []
+    # get an undirected view to be able
+    # to go from papers to used enitites
+    uG = G.to_undirected(as_view=True)
+    # for all papers
+    for (ppr_id, data) in uG.nodes(data=True):
+        if 'type' not in data:
+            # nodes without any data get created by
+            # adding edges to inexistent nodes
+            continue
+        if data['type'] != 'paper':
+            continue
+        ppr_used_entities = set()
+        # for all their used entities
+        for (entity_id, data) in uG.adj[ppr_id].items():
+            if data['type'] != 'used_in_paper':
+                continue
+            ppr_used_entities.add((entity_id, data['type']))
+        # get pairs of entities of dissimilar type
+        for e1 in ppr_used_entities:
+            for e2 in ppr_used_entities:
+                if G.nodes[e1[0]]['type'] != G.nodes[e2[0]]['type']:
+                    # ^ only need to check for dissimilar node type
+                    # because dissimilar ID logically follows
+                    cooc_edges.append(
+                        (e1[0], e2[0])
+                    )
+    return cooc_edges  # currently 2M edges
+
+
 def load_graph(shallow=False):
     node_tuples = _load_node_tuples()
     edge_tuples = _load_edge_tuples()
