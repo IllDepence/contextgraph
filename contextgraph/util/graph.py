@@ -139,9 +139,25 @@ def _load_edge_tuples():
     return edge_tuples
 
 
-def load_graph():
+def load_graph(shallow=False):
     node_tuples = _load_node_tuples()
     edge_tuples = _load_edge_tuples()
+    if shallow:
+        shallow_node_tuples = []
+        shallow_edge_tuples = []
+        for n in node_tuples:
+            shallow_node_tuples.append((
+                n[0],
+                {'type': n[1]['type']}
+            ))
+        for e in edge_tuples:
+            shallow_edge_tuples.append((
+                e[0],
+                e[1],
+                {'type': e[2]['type']}
+            ))
+        node_tuples = shallow_node_tuples
+        edge_tuples = shallow_edge_tuples
     G = nx.DiGraph()
     G.add_nodes_from(node_tuples)
     G.add_edges_from(edge_tuples)
