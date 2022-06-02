@@ -59,6 +59,7 @@ def preprocess_datasets():
             task_id = prep_util.url_to_pwc_id(task['url'])
             tasks_pre[task_id] = {
                 'id': task_id,
+                'type': 'task',
                 'name': task['task']
             }
             dsets_to_tasks.append(

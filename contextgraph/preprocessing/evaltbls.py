@@ -80,6 +80,7 @@ def preprocess_evaltables():
             # add task from this level
             task = {
                 'name': evl['task'],
+                'type': 'task',
                 'description': evl['description'],
                 'categories': evl['categories'],
                 'dsets_tmp': []
@@ -87,12 +88,14 @@ def preprocess_evaltables():
             for dset in evl['datasets']:
                 dset_tmp = {
                     'name': dset['dataset'],
+                    'type': 'dataset',
                     'lnks_tmp': [l['url'] for l in dset['dataset_links']],
                     'mdls_tmp': []
                 }
                 for sota_row in dset['sota']['rows']:
                     mdl_tmp = {
                         'name': sota_row['model_name'],
+                        'type': 'model',
                         'paper_title': sota_row['paper_title'],
                         'paper_url': sota_row['paper_url']
                     }
@@ -114,7 +117,7 @@ def preprocess_evaltables():
 
         task_new = {
             'id': task_id,
-            'type': 'taks',
+            'type': 'task',
             'name': eval_task['name'],
             'description': eval_task['description'],
             'categories': eval_task['categories']

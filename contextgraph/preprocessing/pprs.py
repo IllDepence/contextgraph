@@ -136,6 +136,7 @@ def preprocess_papers(verbose=False):
                 # new task entity
                 tasks_new[task_id] = {
                     'id': task_id,
+                    'type': 'task',
                     'name': task_name,
                     'description': None,
                     'categories': []
