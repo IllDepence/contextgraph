@@ -20,7 +20,7 @@ from nltk.tokenize import sent_tokenize
 import numpy as np
 nltk.download('punkt')
 
-LENGTH_OF_LETTERS = 1000
+# LENGTH_OF_LETTERS = 1000
 
 
 def _load_pwc_arxiv_papers(pwc_dir):
@@ -103,7 +103,7 @@ def _generate_context_id(ppr_id, e_name, cntxt_start, cntxt_end):
     )
 
 
-def add_paper_contexts(verbose=False):
+def add_paper_contexts(verbose=False, mentioned_contexts=False):
     """ Match entities from Papers With Code in unarXive paper plaintexts.
     """
 
@@ -193,16 +193,24 @@ def add_paper_contexts(verbose=False):
         with open(paper_path) as f:
             paper_text = f.read()
 
-        entity_types = {
-            'method_used': ppr_meths,
-            'dataset_used': ppr_dsets,
-            'task_used': ppr_tasks,
-            'model_used': ppr_modls,
-            'method': meths_list,
-            'dataset': dsets_list,
-            'task': tasks_list,
-            'model': modls_list,
-        }
+        if mentioned_contexts:
+            entity_types = {
+                'method_used': ppr_meths,
+                'dataset_used': ppr_dsets,
+                'task_used': ppr_tasks,
+                'model_used': ppr_modls,
+                'method': meths_list,
+                'dataset': dsets_list,
+                'task': tasks_list,
+                'model': modls_list,
+            }
+        else:
+            entity_types = {
+                'method_used': ppr_meths,
+                'dataset_used': ppr_dsets,
+                'task_used': ppr_tasks,
+                'model_used': ppr_modls,
+            }
 
         # go through all entities (1) of the paper and (2) in all of pwc
         for etype, entities in entity_types.items():
@@ -232,18 +240,30 @@ def add_paper_contexts(verbose=False):
                 for m in patt.finditer(paper_text):
                     entity_offset_start = m.start()
                     entity_offset_end = m.end()
+                    # FIXME: _get_context_by_sent throws errors
+                    # context_offset_start = max(
+                    #     entity_offset_start-LENGTH_OF_LETTERS,
+                    #     0
+                    # )
+                    # context_offset_end = min(
+                    #     entity_offset_end+LENGTH_OF_LETTERS,
+                    #     len(paper_text)
+                    # )
+                    # context_passage = paper_text[
+                    #     context_offset_start:context_offset_end
+                    # ]
+                    # context = _get_context_by_sent(context_passage, m.group(0))
                     context_offset_start = max(
-                        entity_offset_start-LENGTH_OF_LETTERS,
+                        entity_offset_start-100,
                         0
                     )
                     context_offset_end = min(
-                        entity_offset_end+LENGTH_OF_LETTERS,
+                        entity_offset_end+100,
                         len(paper_text)
                     )
-                    context_passage = paper_text[
+                    context = paper_text[
                         context_offset_start:context_offset_end
                     ]
-                    context = _get_context_by_sent(context_passage, m.group(0))
                     # create new context entity
                     context_entity = {
                         'id': _generate_context_id(
@@ -275,13 +295,16 @@ def add_paper_contexts(verbose=False):
                     else:
                         contexts_mentioned.append(context_entity)
 
-# add_paper_contexts()
     # persist contexts
     with open(os.path.join(graph_data_dir, contexts_used_fn), 'w') as f:
         for context in contexts_used:
             json.dump(context, f)
             f.write('\n')
-    with open(os.path.join(graph_data_dir, contexts_mentioned_fn), 'w') as f:
-        for context in contexts_mentioned:
-            json.dump(context, f)
-            f.write('\n')
+    if mentioned_contexts:
+        with open(
+            os.path.join(graph_data_dir, contexts_mentioned_fn),
+            'w'
+        ) as f:
+            for context in contexts_mentioned:
+                json.dump(context, f)
+                f.write('\n')
