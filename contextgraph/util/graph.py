@@ -16,7 +16,8 @@ def _load_node_tuples():
         cg_config.graph_meths_fn,
         cg_config.graph_dsets_fn,
         cg_config.graph_tasks_fn,
-        cg_config.graph_modls_fn
+        cg_config.graph_modls_fn,
+        cg_config.graph_cntxts_fn
     ]:
         with open(os.path.join(cg_config.graph_data_dir, fn)) as f:
             for line in f:
@@ -34,6 +35,7 @@ def _load_node_tuples():
                 area['id'],
                 {
                     'id': area['id'],
+                    'type': area['type'],
                     'name': area['name']
                 }
             ))
@@ -59,11 +61,14 @@ def _load_edge_tuples():
         # used_together (tread as symmetrical?)
         [cg_config.graph_meths_to_dsets_fn, 'used_together'],
         [cg_config.graph_dsets_to_tasks_fn, 'used_together'],
+        # cites
+        [cg_config.graph_ppr_to_ppr_fn, 'cites'],
         # part_of
         [cg_config.graph_meths_to_colls_fn, 'part_of'],
-        [cg_config.graph_tasks_to_subtasks_fn, 'part_of'],
-        # cites
-        [cg_config.graph_ppr_to_ppr_fn, 'cites']
+        [cg_config.graph_tasks_to_subtasks_fn, 'part_of']
+        # (further down also: collection to area
+        #                     entity     to context
+        #                     context    to paper)
     ]
     edge_tuples = []
     for (fn, edge_type) in edge_types:
@@ -103,6 +108,33 @@ def _load_edge_tuples():
                         head_id,
                         {'type': 'part_of'}
                     )
+                )
+    # lastly some special processing for contexts to papers and entities
+    with open(os.path.join(
+        cg_config.graph_data_dir,
+        cg_config.graph_cntxts_fn
+    )) as f:
+        for line in f:
+            cntxt = json.loads(line)
+            # entity to context
+            tail_id = cntxt['entity_id']
+            head_id = cntxt['id']
+            edge_tuples.append(
+                (
+                    tail_id,
+                    head_id,
+                    {'type': 'part_of'}
+                )
+                )
+            # context to paper
+            tail_id = cntxt['id']
+            head_id = cntxt['paper_pwc_id']
+            edge_tuples.append(
+                (
+                    tail_id,
+                    head_id,
+                    {'type': 'part_of'}
+                )
                 )
     return edge_tuples
 
