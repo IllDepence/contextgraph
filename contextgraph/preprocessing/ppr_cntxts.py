@@ -17,8 +17,8 @@ from functools import lru_cache
 import contextgraph.config as cg_config
 import nltk
 from nltk.tokenize import sent_tokenize
-nltk.download('punkt')
 import numpy as np
+nltk.download('punkt')
 
 LENGTH_OF_LETTERS = 1000
 
@@ -80,7 +80,8 @@ def _load_pwc_entity_links(pwc_dir):
             links.append(links_single)
     return links
 
-def get_context_by_sent(passage, entity_name, num_pre=1, num_suc=1):
+
+def _get_context_by_sent(passage, entity_name, num_pre=1, num_suc=1):
     sentences = sent_tokenize(passage)
     positions = [i for i, s in enumerate(sentences) if entity_name in s]
     if len(positions) == 1:
@@ -91,6 +92,16 @@ def get_context_by_sent(passage, entity_name, num_pre=1, num_suc=1):
         pos_entity = positions[pos_in_list]
     context = sentences[pos_entity-num_pre: pos_entity+num_suc+1]
     return context
+
+
+def _generate_context_id(ppr_id, e_name, cntxt_start, cntxt_end):
+    return 'uxv:context/{}-{}-{}-{}'.format(
+        ppr_id,
+        e_name,
+        cntxt_start,
+        cntxt_end
+    )
+
 
 def add_paper_contexts(verbose=False):
     """ Match entities from Papers With Code in unarXive paper plaintexts.
@@ -232,25 +243,32 @@ def add_paper_contexts(verbose=False):
                     context_passage = paper_text[
                         context_offset_start:context_offset_end
                     ]
-                    context = get_context_by_sent(context_passage, m.group(0))
+                    context = _get_context_by_sent(context_passage, m.group(0))
                     # create new context entity
                     context_entity = {
-                       'paper_arxiv_id': ppr['arxiv_id'],
-                       'paper_pwc_id': ppr['id'],
-                       'entity_id': entity['id'],
-                       'entity_offset_in_context': [
-                           entity_offset_start-context_offset_start,
-                           entity_offset_end-context_offset_end
-                        ],
-                       'entity_offset_in_paper': [
-                           entity_offset_start,
-                           entity_offset_end
-                        ],
-                       'context_offset_in_paper': [
-                           context_offset_start,
-                           context_offset_end
-                        ],
-                       'context': context
+                        'id': _generate_context_id(
+                            ppr['arxiv_id'],
+                            entity['name'],
+                            context_offset_start,
+                            context_offset_end
+                        ),
+                        'type': 'context',
+                        'paper_arxiv_id': ppr['arxiv_id'],
+                        'paper_pwc_id': ppr['id'],
+                        'entity_id': entity['id'],
+                        'entity_offset_in_context': [
+                            entity_offset_start-context_offset_start,
+                            entity_offset_end-context_offset_end
+                         ],
+                        'entity_offset_in_paper': [
+                            entity_offset_start,
+                            entity_offset_end
+                         ],
+                        'context_offset_in_paper': [
+                            context_offset_start,
+                            context_offset_end
+                         ],
+                        'context': context
                     }
                     if '_used' in etype:
                         contexts_used.append(context_entity)

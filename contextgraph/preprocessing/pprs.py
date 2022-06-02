@@ -96,6 +96,7 @@ def preprocess_papers(verbose=False):
         # add URL slug ID
         ppr_id = url_to_pwc_id(ppr['paper_url'])
         ppr_new['id'] = ppr_id
+        ppr_new['type'] = 'paper'
         # build new dataset list
         pprs_new.append(ppr_new)
         # build methods->papers

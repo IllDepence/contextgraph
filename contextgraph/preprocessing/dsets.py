@@ -41,6 +41,7 @@ def preprocess_datasets():
         # add URL slug ID
         dset_id = prep_util.url_to_pwc_id(dset['url'])
         dset_new['id'] = dset_id
+        dset_new['type'] = 'dataset'
         dset_new['variant_surface_forms'] = [  # rename
                 var_sf for var_sf in dset['variants']
                 if var_sf not in [dset['name'], dset['full_name']]

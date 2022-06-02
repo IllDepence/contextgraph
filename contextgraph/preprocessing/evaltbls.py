@@ -114,6 +114,7 @@ def preprocess_evaltables():
 
         task_new = {
             'id': task_id,
+            'type': 'taks',
             'name': eval_task['name'],
             'description': eval_task['description'],
             'categories': eval_task['categories']
@@ -153,6 +154,7 @@ def preprocess_evaltables():
                     # first time we see this. create new entity
                     modl = {
                         'id': modl_id,
+                        'type': 'model',
                         'name': eval_modl['name'],
                         'using_paper_titles': set([eval_modl['paper_title']]),
                         'evaluations': []

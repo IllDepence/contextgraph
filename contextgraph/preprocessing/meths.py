@@ -39,6 +39,7 @@ def preprocess_methods():
         # add URL slug ID
         meth_id = url_to_pwc_id(meth['url'])
         meth_new['id'] = meth_id
+        meth_new['type'] = 'method'
         # build new methods list
         meths_new.append(meth_new)
         # build method->collection
@@ -55,12 +56,17 @@ def preprocess_methods():
             if area_id not in meth_areas:
                 meth_areas[area_id] = {
                     'id': area_id,
+                    'type': 'area',
                     'name': coll['area'],
                     'collections': []
                 }
             # insert w/o checks here, remove duplicates later
             meth_areas[area_id]['collections'].append(
-                {'id': coll_id, 'name': coll['collection']}
+                {
+                    'id': coll_id,
+                    'type': 'connection',
+                    'name': coll['collection']
+                }
             )
 
     with open(os.path.join(out_dir, meths_new_fn), 'w') as f:
