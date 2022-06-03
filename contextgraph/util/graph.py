@@ -140,37 +140,76 @@ def _load_edge_tuples():
 
 
 def _get_entity_coocurrence_edges(G):
-    cooc_edges = []
+    """ Determine pairs of entities (of dissimilar type) which
+        are used in at least one common paper.
+
+        To make subsequent processing steps more efficient,
+        also determine to earliest common paper for each entity
+        pair.
+    """
+
+    cooc_edges = dict()
     # get an undirected view to be able
     # to go from papers to used enitites
     uG = G.to_undirected(as_view=True)
     # for all papers
-    for (ppr_id, data) in uG.nodes(data=True):
-        if 'type' not in data:
+    i = 0
+    for (ppr_id, ppr_data) in uG.nodes(data=True):
+        i += 1
+        if i > 1000:
+            break
+        if 'type' not in ppr_data:
             # nodes without any data get created by
             # adding edges to inexistent nodes
             continue
-        if data['type'] != 'paper':
+        if ppr_data['type'] != 'paper':
             continue
         ppr_used_entities = set()
         # for all their used entities
-        for (entity_id, data) in uG.adj[ppr_id].items():
-            if data['type'] != 'used_in_paper':
+        for (entity_id, edge_data) in uG.adj[ppr_id].items():
+            if edge_data['type'] != 'used_in_paper':
                 continue
-            ppr_used_entities.add((entity_id, data['type']))
+            ppr_used_entities.add(entity_id)
         # get pairs of entities of dissimilar type
-        for e1 in ppr_used_entities:
-            for e2 in ppr_used_entities:
-                if G.nodes[e1[0]]['type'] != G.nodes[e2[0]]['type']:
-                    # ^ only need to check for dissimilar node type
-                    # because dissimilar ID logically follows
-                    cooc_edges.append(
-                        (e1[0], e2[0])
-                    )
+        for e1_id in ppr_used_entities:
+            e1 = G.nodes[e1_id]
+            for e2_id in ppr_used_entities:
+                e2 = G.nodes[e2_id]
+                # only need to check for dissimilar node type
+                # ⇣ because dissimilar ID logically follows
+                if e1['type'] != e2['type']:
+                    key = '_'.join(sorted([e1['id'], e2['id']]))
+                    if key not in cooc_edges:
+                        cooc_edges[key] = {
+                            'edge': [e1_id, e2_id],
+                            'cooc_pprs': set([ppr_id])
+                        }
+                    else:
+                        cooc_edges[key]['cooc_pprs'].add(
+                            ppr_id
+                        )
+    # Usage example
+    # cooc_edges = _get_entity_coocurrence_edges(G)
+    # for k, ce in cooc_edges.items():
+    #     if len(ce['cooc_pprs']) > 1:
+    #         print('---'.join(ce['edge']))
+    #         for ppr_id in ce['cooc_pprs']:
+    #             ppr = G.nodes[ppr_id]
+    #             print('\t', ppr_id, ppr['date'])
+    #
+    # TODO: - use sample to prune graph according to eariest cooc ppr
+    #       - visually inspect pruned graphs (mby w/ limited neighborhoods
+    #         of entitiy pair)
     return cooc_edges  # currently 2M edges
 
 
 def load_graph(shallow=False):
+    """ Load nodes and edges into a NetworkX digraph.
+
+        If shallow is True, all node and edge features
+        except for type will be discarded.
+    """
+
     node_tuples = _load_node_tuples()
     edge_tuples = _load_edge_tuples()
     if shallow:
