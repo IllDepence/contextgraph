@@ -38,10 +38,18 @@ def preprocess_datasets():
             for key, val in dset.items()
             if key not in ['tasks', 'variants', 'using_papers']  # remove
         }
-        # add URL slug ID
+        # add URL slug ID and other attributes
         dset_id = prep_util.url_to_pwc_id(dset['url'])
         dset_new['id'] = dset_id
         dset_new['type'] = 'dataset'
+        if dset['introduced_date'] is not None:
+            dset_new['year'] = int(dset['introduced_date'][:4])
+            dset_new['month'] = int(dset['introduced_date'][5:7])
+            dset_new['day'] = int(dset['introduced_date'][8:])
+        else:
+            dset_new['year'] = -1
+            dset_new['month'] = -1
+            dset_new['day'] = -1
         dset_new['variant_surface_forms'] = [  # rename
                 var_sf for var_sf in dset['variants']
                 if var_sf not in [dset['name'], dset['full_name']]

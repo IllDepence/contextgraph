@@ -87,17 +87,25 @@ def preprocess_papers(verbose=False):
     tasks_new = dict()
     id_shiftet_tasks = set()
     for ppr in pprs_orig:
-        # create preprocessed dataset object
+        # create paper object
         ppr_new = {
             key: val
             for key, val in ppr.items()
             if key not in ['tasks', 'methods']  # remove
         }
-        # add URL slug ID
+        # add URL slug ID and other attributes
         ppr_id = url_to_pwc_id(ppr['paper_url'])
         ppr_new['id'] = ppr_id
         ppr_new['type'] = 'paper'
-        # build new dataset list
+        if len(ppr['date']) > 0:
+            ppr_new['year'] = int(ppr['date'][:4])
+            ppr_new['month'] = int(ppr['date'][5:7])
+            ppr_new['day'] = int(ppr['date'][8:])
+        else:
+            ppr_new['year'] = -1
+            ppr_new['month'] = -1
+            ppr_new['day'] = -1
+        # build paper list
         pprs_new.append(ppr_new)
         # build methods->papers
         for meth in ppr['methods']:
