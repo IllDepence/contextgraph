@@ -203,7 +203,11 @@ def _get_entity_coocurrence_edges(G):
     return cooc_edges  # currently 2M edges
 
 
-def load_graph(shallow=False):
+def make_shallow(G):
+    pass  # TODO: mby useful for keeping visualization file size small
+
+
+def load_graph(shallow=False, directed=True):
     """ Load nodes and edges into a NetworkX digraph.
 
         If shallow is True, all node and edge features
@@ -228,7 +232,10 @@ def load_graph(shallow=False):
             ))
         node_tuples = shallow_node_tuples
         edge_tuples = shallow_edge_tuples
-    G = nx.DiGraph()
+    if directed:
+        G = nx.DiGraph()
+    else:
+        G = nx.Graph()
     G.add_nodes_from(node_tuples)
     G.add_edges_from(edge_tuples)
     return G

@@ -17,13 +17,13 @@
     * `matching_result_ui/` - web UI to show matching results
 
 * **preprocessing** `contextgraph/preprocessing/`
-    * `crawl_dataset_papers.py`
-    * `preprocess_datasets.py`  (requires `crawl_dataset_papers.py` output)
-    * `preprocess_methods.py`
-    * `preprocess_evaltables.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
-    * `preprocess_papers.py`  (requires `preprocess_evaltables.py` output)
-    * `add_citation_network.py`  (requires `preprocess_papers.py` output)
-    * `add_paper_contexts.py` (requires output of all of the above)
+    * `crawler.py`
+    * `dsets.py`  (requires `crawl_dataset_papers.py` output)
+    * `meths.py`
+    * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
+    * `pprs.py`  (requires `preprocess_evaltables.py` output)
+    * `cit_netw.py`  (requires `preprocess_papers.py` output)
+    * `ppr_cntxts.py` (requires output of all of the above)
         * requires module `regex` (not `re`)
         * example use on icarus: `$ python3 add_paper_contexts.py --pwc_dir /home/ls3data/datasets/paperswithcode/preprocessed/ --unarxive_dir /opt/unarXive/unarXive-2020/papers/`
 
@@ -47,12 +47,20 @@
 * work with graph
     * PoC for working with a graph library ✔
     * add currently missing data
-        * method collections and areas
-        * entity contexts
+        * method collections and areas ✔
+        * entity contexts ✔
         * topological encoding of paper publication order
     * create visualization
     * explore different settings (directed, undirected, additional edges for symmetrical relationships, special transitive relationships, etc.)
     * create function for generating train/val/test data
+        * pairs of entities which
+            * have at least one common paper
+            * are of dissimilar type
+            * have a using paper with a given minimum age (e.g. from 2010)
+        * pruning of
+            * all papers older that the first common paper
+            * used_together edges
+            * ... (more?)
 * prediction
     * create a first set of data to evaluate and develop methods
     * try simple methods
