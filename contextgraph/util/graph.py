@@ -206,6 +206,28 @@ def _get_entity_coocurrence_edges(G):
     return cooc_edges  # currently 2M edges
 
 
+def _get_two_hop_pair_neighborhood(cooc_entity_pair, G):
+    """
+    """
+
+    keep_node_ids = set()
+
+    # get an undirected view to be able
+    # to go from papers to used enitites
+    uG = G.to_undirected(as_view=True)
+
+    # for both entities
+    for entity in cooc_entity_pair['edge']:
+        # first hop neighborhoor
+        for one_hop_neigh in uG.neighbors(entity):
+            keep_node_ids.add(one_hop_neigh)
+            # second hop neighborhoor
+            for two_hop_neigh in uG.neighbors(one_hop_neigh):
+                keep_node_ids.add(two_hop_neigh)
+
+    return G.subgraph(keep_node_ids)
+
+
 def _get_pruned_graph(cooc_entity_pair, G):
     """ For a pair of entities that co-occur in at least one paper
         (given as a dictionary containing the entities and a list of
@@ -215,6 +237,7 @@ def _get_pruned_graph(cooc_entity_pair, G):
     """
 
     # TODO: currently takes 4 seconds on full graph -> too long?
+    #       (takes 126 ms on an edge’s two hop neighborhoor)
 
     keep_node_ids = []
 
