@@ -51,6 +51,9 @@ def _load_edge_tuples():
     """ loads edges as (<id>, <properties>) tuples
     """
 
+    # TODO: introduce paprameter to only load edges
+    #       where head and tail entity already exist
+
     # first all regularly stored edges
     edge_types = [
         # used_in_paper
@@ -157,7 +160,7 @@ def _get_entity_coocurrence_edges(G):
     for (ppr_id, ppr_data) in uG.nodes(data=True):
         i += 1
         if i > 1000:
-            break
+            break  # FIXME
         if 'type' not in ppr_data:
             # nodes without any data get created by
             # adding edges to inexistent nodes
@@ -201,6 +204,49 @@ def _get_entity_coocurrence_edges(G):
     #       - visually inspect pruned graphs (mby w/ limited neighborhoods
     #         of entitiy pair)
     return cooc_edges  # currently 2M edges
+
+
+def _get_pruned_graph(cooc_entity_pair, G):
+    """ For a pair of entities that co-occur in at least one paper
+        (given as a dictionary containing the entities and a list of
+        all co-occurrence papers)
+        return a pruned version of the graph G that contains only
+        papers before the first co-occurrence paper.
+    """
+
+    # TODO: currently takes 4 seconds on full graph -> too long?
+
+    keep_node_ids = []
+
+    # determine earliest co-occurrence paper
+    thresh_year = 9999
+    thresh_month = 13
+    for cooc_ppr_id in cooc_entity_pair['cooc_pprs']:
+        ppr_data = G.nodes[cooc_ppr_id]
+        try:
+            y = ppr_data['year']
+            m = ppr_data['month']
+            thresh_year = min(y, thresh_year)
+            thresh_month = min(m, thresh_month)
+        except KeyError:
+            print(cooc_ppr_id)
+            print(len(ppr_data))
+            raise
+    # determine all papers published after earliest cooc ppr
+    for node_id in G.nodes:
+        node_data = G.nodes[node_id]
+        if len(node_data) > 0:
+            if node_data['type'] != 'paper':
+                # not a paper, keep
+                # (TODO: also consider other enitites
+                #  that should be removed)
+                keep_node_ids.append(node_id)
+            elif node_data['year'] < thresh_year and \
+                    node_data['month'] < thresh_month:
+                # a paper but published early enough
+                keep_node_ids.append(node_id)
+
+    return G.subgraph(keep_node_ids)
 
 
 def make_shallow(G):
