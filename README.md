@@ -63,6 +63,11 @@
             * ... (more?)
 * prediction
     * create a first set of data to evaluate and develop methods
+        * prediction edge considerations:
+            * “virtual” edges between diff. typ. entities w/ a common paper
+            * edges between meths and dsets which have an evaltbl row
+            * the union of both of the above
+            * TODO: calculate numbers for the above
     * try simple methods
         * topology only
         * topology + pre-computed embeddings for node features

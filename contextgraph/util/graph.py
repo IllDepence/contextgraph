@@ -63,7 +63,16 @@ def _load_edge_tuples():
         [cg_config.graph_modls_to_pprs_fn, 'used_in_paper'],
         # used_together (tread as symmetrical?)
         [cg_config.graph_meths_to_dsets_fn, 'used_together'],
+        # # ^ FIXME: this means method used for (some task) on dataset
+        # #          as extracted from evaltable
+        # #          TODO: - mby also establish link between method and task
+        # #                - or think of a "eval set" (meth, dset, task)
+        # #                - should be associated w/ a date to prune graph of
+        # #                  future
+        # #                - rename
         [cg_config.graph_dsets_to_tasks_fn, 'used_together'],
+        # # ^ FIXME: this means the dataset lists the task as one of its tasks
+        # #          TODO: - rename
         # cites
         [cg_config.graph_ppr_to_ppr_fn, 'cites'],
         # part_of
