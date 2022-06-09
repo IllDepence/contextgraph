@@ -142,12 +142,12 @@ def _load_edge_tuples():
     return edge_tuples
 
 
-def _get_entity_coocurrence_edges(G):
+def _get_entity_coocurrence_edges(G, lim=-1):
     """ Determine pairs of entities (of dissimilar type) which
         are used in at least one common paper.
 
         To make subsequent processing steps more efficient,
-        also determine to earliest common paper for each entity
+        also determine all common papers for each entity
         pair.
     """
 
@@ -159,8 +159,8 @@ def _get_entity_coocurrence_edges(G):
     i = 0
     for (ppr_id, ppr_data) in uG.nodes(data=True):
         i += 1
-        if i > 1000:
-            break  # FIXME
+        if lim > 0 and i > lim:
+            break
         if 'type' not in ppr_data:
             # nodes without any data get created by
             # adding edges to inexistent nodes
@@ -181,7 +181,7 @@ def _get_entity_coocurrence_edges(G):
                 # only need to check for dissimilar node type
                 # ⇣ because dissimilar ID logically follows
                 if e1['type'] != e2['type']:
-                    key = '_'.join(sorted([e1['id'], e2['id']]))
+                    key = '_'.join(sorted([e1_id, e2_id]))
                     if key not in cooc_edges:
                         cooc_edges[key] = {
                             'edge': [e1_id, e2_id],
@@ -191,24 +191,16 @@ def _get_entity_coocurrence_edges(G):
                         cooc_edges[key]['cooc_pprs'].add(
                             ppr_id
                         )
-    # Usage example
-    # cooc_edges = _get_entity_coocurrence_edges(G)
-    # for k, ce in cooc_edges.items():
-    #     if len(ce['cooc_pprs']) > 1:
-    #         print('---'.join(ce['edge']))
-    #         for ppr_id in ce['cooc_pprs']:
-    #             ppr = G.nodes[ppr_id]
-    #             print('\t', ppr_id, ppr['date'])
-    #
-    # TODO: - use sample to prune graph according to eariest cooc ppr
-    #       - visually inspect pruned graphs (mby w/ limited neighborhoods
-    #         of entitiy pair)
-    return cooc_edges  # currently 2M edges
+
+    return cooc_edges  # 2M edges if lim is not set
 
 
 def _get_two_hop_pair_neighborhood(cooc_entity_pair, G):
+    """ Get two hop neighborhood for a pair of entities
+        that co-occur in at least one paper.
     """
-    """
+
+    # TODO: generalize to n hops
 
     keep_node_ids = set()
 
@@ -218,13 +210,12 @@ def _get_two_hop_pair_neighborhood(cooc_entity_pair, G):
 
     # for both entities
     for entity in cooc_entity_pair['edge']:
-        # first hop neighborhoor
+        # first hop neighborhood
         for one_hop_neigh in uG.neighbors(entity):
             keep_node_ids.add(one_hop_neigh)
-            # second hop neighborhoor
+            # second hop neighborhood
             for two_hop_neigh in uG.neighbors(one_hop_neigh):
                 keep_node_ids.add(two_hop_neigh)
-
     return G.subgraph(keep_node_ids)
 
 
@@ -237,7 +228,7 @@ def _get_pruned_graph(cooc_entity_pair, G):
     """
 
     # TODO: currently takes 4 seconds on full graph -> too long?
-    #       (takes 126 ms on an edge’s two hop neighborhoor)
+    #       (takes 126 ms on an edge’s two hop neighborhood)
 
     keep_node_ids = []
 
@@ -246,15 +237,10 @@ def _get_pruned_graph(cooc_entity_pair, G):
     thresh_month = 13
     for cooc_ppr_id in cooc_entity_pair['cooc_pprs']:
         ppr_data = G.nodes[cooc_ppr_id]
-        try:
-            y = ppr_data['year']
-            m = ppr_data['month']
-            thresh_year = min(y, thresh_year)
-            thresh_month = min(m, thresh_month)
-        except KeyError:
-            print(cooc_ppr_id)
-            print(len(ppr_data))
-            raise
+        y = ppr_data['year']
+        m = ppr_data['month']
+        thresh_year = min(y, thresh_year)
+        thresh_month = min(m, thresh_month)
     # determine all papers published after earliest cooc ppr
     for node_id in G.nodes:
         node_data = G.nodes[node_id]
@@ -272,8 +258,41 @@ def _get_pruned_graph(cooc_entity_pair, G):
     return G.subgraph(keep_node_ids)
 
 
+def get_pair_graphs(n_pairs, G):
+    # first tests
+    #   10 pairs: 15s
+    #   15 pairs: 22s
+    #   25 pairs: 3min 26s
+    #   50 pairs: 3min 57s
+    #   100 pairs: 10min 40s
+    pair_grahps = []
+    cooc_edges = _get_entity_coocurrence_edges(G, n_pairs)
+    for key, cooc_edge in cooc_edges.items():
+        neigh_G = _get_two_hop_pair_neighborhood(cooc_edge, G)
+        pruned_G = _get_pruned_graph(cooc_edge, neigh_G)
+        pair_grahps.append({
+            'prediction_edge': cooc_edge,
+            'graph': pruned_G
+        })
+    return pair_grahps
+
+
 def make_shallow(G):
-    pass  # TODO: mby useful for keeping visualization file size small
+    """ Remove all attributes except for type from nodes and edges
+    """
+
+    if type(G) == nx.DiGraph:
+        shallow_G = nx.DiGraph()
+    else:
+        shallow_G = nx.Graph()
+
+    for nid, ndata in G.nodes.items():
+        shallow_G.add_nodes_from([(nid, {'type': ndata['type']})])
+    for edge_tuple, edata in G.edges.items():
+        naid, nbid = edge_tuple
+        shallow_G.add_edges_from([(naid, nbid, {'type': edata['type']})])
+
+    return shallow_G
 
 
 def load_graph(shallow=False, directed=True):
