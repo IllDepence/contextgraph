@@ -47,8 +47,11 @@ def _load_node_tuples():
     return entity_tuples
 
 
-def _load_edge_tuples():
+def _load_edge_tuples(final_node_set=False):
     """ loads edges as (<id>, <properties>) tuples
+
+        If final_node_set is given, only edges between existing nodes
+        will be returned.
     """
 
     # TODO: introduce paprameter to only load edges
@@ -71,11 +74,13 @@ def _load_edge_tuples():
         # #                  future
         # has task
         [cg_config.graph_dsets_to_tasks_fn, 'has_task'],
+        # has subtask
+        [cg_config.graph_tasks_to_subtasks_fn, 'has_subtask'],
+        # # ^ could be reversed and given type 'part_of'
         # cites
         [cg_config.graph_ppr_to_ppr_fn, 'cites'],
         # part_of
-        [cg_config.graph_meths_to_colls_fn, 'part_of'],
-        [cg_config.graph_tasks_to_subtasks_fn, 'part_of']  # FIXME: reverse
+        [cg_config.graph_meths_to_colls_fn, 'part_of']
         # (further down also: collection to area
         #                     entity     to context
         #                     context    to paper)
@@ -95,13 +100,17 @@ def _load_edge_tuples():
             for row in csv_reader:
                 tail_id = row[headers[header_idxs[0]]]
                 head_id = row[headers[header_idxs[1]]]
-                edge_tuples.append(
-                    (
-                        tail_id,
-                        head_id,
-                        {'type': edge_type}
+                if final_node_set is False or (
+                        tail_id in final_node_set and
+                        head_id in final_node_set
+                        ):
+                    edge_tuples.append(
+                        (
+                            tail_id,
+                            head_id,
+                            {'type': edge_type}
+                        )
                     )
-                )
     # then some special processing for the areas to collections data
     with open(os.path.join(
         cg_config.graph_data_dir,
@@ -112,13 +121,17 @@ def _load_edge_tuples():
             head_id = area['id']
             for coll in area['collections']:
                 tail_id = coll['id']
-                edge_tuples.append(
-                    (
-                        tail_id,
-                        head_id,
-                        {'type': 'part_of'}
+                if final_node_set is False or (
+                        tail_id in final_node_set and
+                        head_id in final_node_set
+                        ):
+                    edge_tuples.append(
+                        (
+                            tail_id,
+                            head_id,
+                            {'type': 'part_of'}
+                        )
                     )
-                )
     # lastly some special processing for contexts to papers and entities
     with open(os.path.join(
         cg_config.graph_data_dir,
@@ -129,22 +142,30 @@ def _load_edge_tuples():
             # entity to context
             tail_id = cntxt['entity_id']
             head_id = cntxt['id']
-            edge_tuples.append(
-                (
-                    tail_id,
-                    head_id,
-                    {'type': 'part_of'}
-                )
+            if final_node_set is False or (
+                    tail_id in final_node_set and
+                    head_id in final_node_set
+                    ):
+                edge_tuples.append(
+                    (
+                        tail_id,
+                        head_id,
+                        {'type': 'part_of'}
+                    )
                 )
             # context to paper
             tail_id = cntxt['id']
             head_id = cntxt['paper_pwc_id']
-            edge_tuples.append(
-                (
-                    tail_id,
-                    head_id,
-                    {'type': 'part_of'}
-                )
+            if final_node_set is False or (
+                    tail_id in final_node_set and
+                    head_id in final_node_set
+                    ):
+                edge_tuples.append(
+                    (
+                        tail_id,
+                        head_id,
+                        {'type': 'part_of'}
+                    )
                 )
     return edge_tuples
 
@@ -310,7 +331,11 @@ def load_graph(shallow=False, directed=True):
     """
 
     node_tuples = _load_node_tuples()
-    edge_tuples = _load_edge_tuples()
+    edge_tuples = _load_edge_tuples(
+        # make sure not to give networkx a reason to implicitly
+        # add empty, untyped nodes because of edges
+        set([ntup[0] for ntup in node_tuples])
+    )
     if shallow:
         shallow_node_tuples = []
         shallow_edge_tuples = []

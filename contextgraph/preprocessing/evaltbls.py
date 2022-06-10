@@ -10,6 +10,7 @@
 import csv
 import json
 import os
+import re
 from contextgraph import config as cg_config
 from contextgraph.util.preprocessing import name_to_slug
 
@@ -24,7 +25,6 @@ def preprocess_evaltables():
     dsets_processed_fn = cg_config.graph_dsets_fn
     dset_name_to_id = dict()
     tasks_preprocessed_fn = cg_config.graph_tasks_pre_fn
-    task_id_to_name = dict()
     task_name_to_id = dict()
     tasks_new_fn = cg_config.graph_tasks_fn
     tasks_new = []
@@ -48,10 +48,6 @@ def preprocess_evaltables():
         }
     with open(os.path.join(out_dir, tasks_preprocessed_fn)) as f:
         lines = f.readlines()
-        task_id_to_name = {
-            task['id']: task['name']
-            for task in [json.loads(line) for line in lines]
-        }
         task_name_to_id = {
             task['name']: task['id']
             for task in [json.loads(line) for line in lines]
@@ -96,6 +92,7 @@ def preprocess_evaltables():
                     mdl_tmp = {
                         'name': sota_row['model_name'],
                         'type': 'model',
+                        'paper_date': sota_row['paper_date'],
                         'paper_title': sota_row['paper_title'],
                         'paper_url': sota_row['paper_url']
                     }
@@ -137,20 +134,53 @@ def preprocess_evaltables():
                 dset_id = name_to_slug(eval_dset['name'])
                 is_sub_dset = True
             for eval_modl in eval_dset['mdls_tmp']:
+                # if this model is also a method, we create some special
+                # links, because we then know that
+                # - a method was evaluated
+                # - on a certain data set
+                # - (if there is a paper given:) at a certain point in time
                 if eval_modl['name'] in meth_name_to_id:
                     # model is also treated as a method by PWC
-                    # -> create method entity anyways
-                    # -> create model to dataset link
+                    # -> create method to dataset link
+
                     #    (if not a sub dset
                     #     TODO: can we identify the parent dset?
                     #           there is a subdataset dict key but
                     #           never used in evaluation-tables.json)
                     meth_id = meth_name_to_id[eval_modl['name']]
+                    # TODO: check for paper_date None or not and
+                    #       only create link if there is one?
+                    # consideration to make: do we want to perform link
+                    # prediction for predicting
+                    # a) "combined" use in a more general sense
+                    # or
+                    # b) combined use (in an ML eval)
                     if not is_sub_dset:
-                        meths_to_dsets.append([
-                            meth_id,
-                            dset_id
-                        ])
+                        # it’s a method
+                        if eval_modl['paper_date'] is not None:
+                            # and we have a data to associate with it
+                            eval_date = eval_modl['paper_date']
+                            eval_y = int(eval_date[:4])
+                            eval_m = int(eval_date[5:7])
+                            eval_d = int(eval_date[8:])
+                            csv_safe_title = re.sub(
+                                r'\W',
+                                '_',
+                                eval_modl['paper_title']
+                            )
+                            meths_to_dsets.append([
+                                meth_id,
+                                dset_id,
+                                csv_safe_title,
+                                eval_date,
+                                eval_y,
+                                eval_m,
+                                eval_d,
+                                task_id
+                            ])
+                            # ^ cries for a eval node, but papers are
+                            # probably not easily matchable by URL
+                            # or title
                 modl_id = 'pwc:model/' + name_to_slug(eval_modl['name'])
                 modl = modls_new.get(modl_id, None)
                 if modl is None:
@@ -220,9 +250,15 @@ def preprocess_evaltables():
         csv_writer.writerow([
             'method_id',
             'dataset_id',
+            'eval_paper_title',
+            'eval_date',
+            'eval_year',
+            'eval_month',
+            'eval_day',
+            'task_id'
         ])
-        for (meth_id, dset_id) in meths_to_dsets:
-            csv_writer.writerow([meth_id, dset_id])
+        for vals in meths_to_dsets:
+            csv_writer.writerow(vals)
 
     with open(os.path.join(out_dir, modls_to_pprs_fn), 'w') as f:
         csv_writer = csv.writer(
