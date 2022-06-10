@@ -34,6 +34,10 @@
     * ...
 
 
+# Modeling for basic GNN
+
+* maybe get rid over ppr nodes and create `used_rogether` edges
+
 # TODOs
 
 * preprocess paperswithcode to
