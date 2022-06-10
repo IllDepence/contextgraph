@@ -61,23 +61,21 @@ def _load_edge_tuples():
         [cg_config.graph_dsets_to_pprs_fn, 'used_in_paper'],
         [cg_config.graph_tasks_to_pprs_fn, 'used_in_paper'],
         [cg_config.graph_modls_to_pprs_fn, 'used_in_paper'],
-        # used_together (tread as symmetrical?)
-        [cg_config.graph_meths_to_dsets_fn, 'used_together'],
+        # evaluated on
+        [cg_config.graph_meths_to_dsets_fn, 'evaluated_on'],
         # # ^ FIXME: this means method used for (some task) on dataset
         # #          as extracted from evaltable
         # #          TODO: - mby also establish link between method and task
         # #                - or think of a "eval set" (meth, dset, task)
         # #                - should be associated w/ a date to prune graph of
         # #                  future
-        # #                - rename
-        [cg_config.graph_dsets_to_tasks_fn, 'used_together'],
-        # # ^ FIXME: this means the dataset lists the task as one of its tasks
-        # #          TODO: - rename
+        # has task
+        [cg_config.graph_dsets_to_tasks_fn, 'has_task'],
         # cites
         [cg_config.graph_ppr_to_ppr_fn, 'cites'],
         # part_of
         [cg_config.graph_meths_to_colls_fn, 'part_of'],
-        [cg_config.graph_tasks_to_subtasks_fn, 'part_of']
+        [cg_config.graph_tasks_to_subtasks_fn, 'part_of']  # FIXME: reverse
         # (further down also: collection to area
         #                     entity     to context
         #                     context    to paper)
