@@ -5,20 +5,22 @@ import networkx as nx
 from contextgraph import config as cg_config
 
 
-def _load_node_tuples():
+def _load_node_tuples(with_contexts=False):
     """ loads nodes as (<id>, <properties>) tuples
     """
 
     entity_tuples = []
     # first all regularly stored entities
-    for fn in [
+    node_fns = [
         cg_config.graph_pprs_fn,
         cg_config.graph_meths_fn,
         cg_config.graph_dsets_fn,
         cg_config.graph_tasks_fn,
         cg_config.graph_modls_fn,
-        cg_config.graph_cntxts_fn
-    ]:
+    ]
+    if with_contexts:
+        node_fns.append(cg_config.graph_cntxts_fn)
+    for fn in node_fns:
         with open(os.path.join(cg_config.graph_data_dir, fn)) as f:
             for line in f:
                 entity = json.loads(line)
@@ -47,7 +49,7 @@ def _load_node_tuples():
     return entity_tuples
 
 
-def _load_edge_tuples(final_node_set=False):
+def _load_edge_tuples(with_contexts=False, final_node_set=False):
     """ loads edges as (<id>, <properties>) tuples
 
         If final_node_set is given, only edges between existing nodes
@@ -79,7 +81,7 @@ def _load_edge_tuples(final_node_set=False):
         # part_of
         [cg_config.graph_meths_to_colls_fn, 'part_of']
         # (further down also: collection to area
-        #                     entity     to context
+        #                     entity     to context (if param set)
         #                     context    to paper)
     ]
     edge_tuples = []
@@ -129,41 +131,43 @@ def _load_edge_tuples(final_node_set=False):
                             {'type': 'part_of'}
                         )
                     )
-    # lastly some special processing for contexts to papers and entities
-    with open(os.path.join(
-        cg_config.graph_data_dir,
-        cg_config.graph_cntxts_fn
-    )) as f:
-        for line in f:
-            cntxt = json.loads(line)
-            # entity to context
-            tail_id = cntxt['entity_id']
-            head_id = cntxt['id']
-            if final_node_set is False or (
-                    tail_id in final_node_set and
-                    head_id in final_node_set
-                    ):
-                edge_tuples.append(
-                    (
-                        tail_id,
-                        head_id,
-                        {'type': 'part_of'}
+
+    if with_contexts:
+        # lastly some special processing for contexts to papers and entities
+        with open(os.path.join(
+            cg_config.graph_data_dir,
+            cg_config.graph_cntxts_fn
+        )) as f:
+            for line in f:
+                cntxt = json.loads(line)
+                # entity to context
+                tail_id = cntxt['entity_id']
+                head_id = cntxt['id']
+                if final_node_set is False or (
+                        tail_id in final_node_set and
+                        head_id in final_node_set
+                        ):
+                    edge_tuples.append(
+                        (
+                            tail_id,
+                            head_id,
+                            {'type': 'part_of'}
+                        )
                     )
-                )
-            # context to paper
-            tail_id = cntxt['id']
-            head_id = cntxt['paper_pwc_id']
-            if final_node_set is False or (
-                    tail_id in final_node_set and
-                    head_id in final_node_set
-                    ):
-                edge_tuples.append(
-                    (
-                        tail_id,
-                        head_id,
-                        {'type': 'part_of'}
+                # context to paper
+                tail_id = cntxt['id']
+                head_id = cntxt['paper_pwc_id']
+                if final_node_set is False or (
+                        tail_id in final_node_set and
+                        head_id in final_node_set
+                        ):
+                    edge_tuples.append(
+                        (
+                            tail_id,
+                            head_id,
+                            {'type': 'part_of'}
+                        )
                     )
-                )
     return edge_tuples
 
 
@@ -302,11 +306,19 @@ def get_pair_graphs(n_pairs, G):
     pair_grahps = []
     cooc_edges = _get_entity_coocurrence_edges(G, n_pairs)
     for key, cooc_edge in cooc_edges.items():
+        # reduce to neighborhood that is potentially necessary (for speedup)
         neigh_G = _get_two_hop_pair_neighborhood_nodes(cooc_edge, G)
+        # remove paper nodes based on time constraint
         pruned_G = _get_pruned_graph(cooc_edge, neigh_G)
+        # reduce to neighborhood (gets rid of stuff that is onyl
+        # connected in unpruned graph)
+        pruned_neigh_G = _get_two_hop_pair_neighborhood_nodes(
+            cooc_edge,
+            pruned_G
+        )
         pair_grahps.append({
             'prediction_edge': cooc_edge,
-            'graph': pruned_G
+            'graph': pruned_neigh_G
         })
     return pair_grahps
 
@@ -329,18 +341,21 @@ def make_shallow(G):
     return shallow_G
 
 
-def load_graph(shallow=False, directed=True):
+def load_graph(shallow=False, directed=True, with_contexts=False):
     """ Load nodes and edges into a NetworkX digraph.
 
         If shallow is True, all node and edge features
         except for type will be discarded.
     """
 
-    node_tuples = _load_node_tuples()
+    node_tuples = _load_node_tuples(
+        with_contexts=with_contexts
+    )
     edge_tuples = _load_edge_tuples(
+        with_contexts=with_contexts,
         # make sure not to give networkx a reason to implicitly
         # add empty, untyped nodes because of edges
-        set([ntup[0] for ntup in node_tuples])
+        final_node_set=set([ntup[0] for ntup in node_tuples])
     )
     if shallow:
         shallow_node_tuples = []
