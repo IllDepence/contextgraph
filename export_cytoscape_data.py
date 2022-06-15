@@ -33,6 +33,6 @@ if __name__ == '__main__':
         print('usage: python3 export_cyroscape_data.py <path> [<num_samples>]')
 
     if len(sys.argv) == 2:
-        export(sys.argv[1])
+        export_cyto(sys.argv[1])
     elif len(sys.argv) == 3:
-        export_samples(sys.argv[1], int(sys.argv[2]))
+        export_samples_cyto(sys.argv[1], int(sys.argv[2]))

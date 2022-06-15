@@ -54,9 +54,6 @@ def _load_edge_tuples(final_node_set=False):
         will be returned.
     """
 
-    # TODO: introduce paprameter to only load edges
-    #       where head and tail entity already exist
-
     # first all regularly stored edges
     edge_types = [
         # used_in_paper
@@ -66,12 +63,12 @@ def _load_edge_tuples(final_node_set=False):
         [cg_config.graph_modls_to_pprs_fn, 'used_in_paper'],
         # evaluated on
         [cg_config.graph_meths_to_dsets_fn, 'evaluated_on'],
-        # # ^ FIXME: this means method used for (some task) on dataset
-        # #          as extracted from evaltable
-        # #          TODO: - mby also establish link between method and task
-        # #                - or think of a "eval set" (meth, dset, task)
-        # #                - should be associated w/ a date to prune graph of
-        # #                  future
+        # # ^ NOTE: this means method used for (some task) on dataset
+        # #         as extracted from evaltable
+        # #         TODO: - mby also establish link between method and task
+        # #               - or think of a "eval set" (meth, dset, task)
+        # #               - should be associated w/ a date to prune graph of
+        # #                 future
         # has task
         [cg_config.graph_dsets_to_tasks_fn, 'has_task'],
         # has subtask
