@@ -277,6 +277,9 @@ def add_paper_contexts(verbose=False, mentioned_contexts=False):
                         'paper_pwc_id': ppr['id'],
                         'entity_id': entity['id'],
                         'entity_offset_in_context': [
+                            # FIXME: try making this shallow (separate
+                            # attribs for start and end) and see if it
+                            # fixes cytoscape import from JSON
                             entity_offset_start-context_offset_start,
                             entity_offset_end-context_offset_end
                          ],
