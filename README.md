@@ -1,3 +1,39 @@
+# Code
+
+* **prediction** `contextgraph/prediction/`
+    * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
+        * TODO: negative training samples (also see TODOs down below)
+
+* **visualization** `contextgraph/visualization/`
+    * `show_sample.py` (using nx + matplotlip)
+    * `export_cytoscape_data.py` + Cytoscape (for manual inspection)
+        * side note: Cytoscape has a REST API: `./cytoscape.sh -R 8888` ([doku](https://manual.cytoscape.org/en/3.5.0/Programmatic_Access_to_Cytoscape_Features_Scripting.html))
+
+* **preprocessing**
+    * `preprocess.py` (uses paths in `contextgraph/config.py`)
+    *  `contextgraph/preprocessing/`
+        * `crawler.py`
+        * `dsets.py`  (requires `crawl_dataset_papers.py` output)
+        * `meths.py`
+        * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
+        * `pprs.py`  (requires `preprocess_evaltables.py` output)
+        * `cit_netw.py`  (requires `preprocess_papers.py` output)
+        * `ppr_cntxts.py` (requires output of all of the above)
+            * requires module `regex` (not `re`)
+
+* **exploration** `exploration/`
+    * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
+    * `pwc_matching_poc.py` - match entities from Papers With Code in unarXive paper plaintexts
+    * `matching_result_ui/` - web UI to show matching results
+
+
+# Conceptual considerations
+
+### Modeling for basic GNN
+
+* maybe get rid over ppr nodes and create `used_rogether` edges
+
+
 # Data
 
 ### unarXive
@@ -9,38 +45,10 @@
 
 * `/home/ls3data/datasets/paperswithcode`
 
-# Code
-
-* **exploration** `exploration/`
-    * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
-    * `pwc_matching_poc.py` - match entities from Papers With Code in unarXive paper plaintexts
-    * `matching_result_ui/` - web UI to show matching results
-
-* **preprocessing** `contextgraph/preprocessing/`
-    * `crawler.py`
-    * `dsets.py`  (requires `crawl_dataset_papers.py` output)
-    * `meths.py`
-    * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
-    * `pprs.py`  (requires `preprocess_evaltables.py` output)
-    * `cit_netw.py`  (requires `preprocess_papers.py` output)
-    * `ppr_cntxts.py` (requires output of all of the above)
-        * requires module `regex` (not `re`)
-        * example use on icarus: `$ python3 add_paper_contexts.py --pwc_dir /home/ls3data/datasets/paperswithcode/preprocessed/ --unarxive_dir /opt/unarXive/unarXive-2020/papers/`
-
-* **visualization** `contextgraph/visualization/`
-    * ...
-
-* **prediction** `contextgraph/prediction/`
-    * ...
-
-
-# Modeling for basic GNN
-
-* maybe get rid over ppr nodes and create `used_rogether` edges
 
 # TODOs
 
-* preprocess paperswithcode to
+* preprocess paperswithcode to ✔
     * jsonl file per given entity type (method, dataset, task, paper) ✔
     * extra entities (model, method-collection, collection-area) ✔
     * mappings using pwc URL slugs between entities ✔
@@ -59,7 +67,7 @@
     * create function for generating train/val/test data
         * pairs of entities which
             * have at least one common paper
-            * are of dissimilar type
+            * are of dissimilar type (also not model+method)
             * have a using paper with a given minimum age (e.g. from 2010)
         * pruning of
             * all papers older that the first common paper
