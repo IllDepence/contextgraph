@@ -1,13 +1,24 @@
 # Code
 
 * **prediction** `contextgraph/prediction/`
-    * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
-        * TODO: negative training samples (also see TODOs down below)
+    * *training sample generation*
+        * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
+            * TODO: negative training samples (also see TODOs down below)
+    * negative sampling:
+        * “currupt edge” (one entity of co-occurrence edge swapped to random)
+            * pruning problem: no common using papers through which to determine paper publication threshold
+            * → group cooc edges by year of first cooc ppr
+            * → from each year set take pairs of cooc edges with disjoint cooc ppr sets
+            * → create negative examples by switching out entity nodes between such pairs
 
 * **visualization** `contextgraph/visualization/`
     * `show_sample.py` (using nx + matplotlip)
     * `export_cytoscape_data.py` + Cytoscape (for manual inspection)
         * side note: Cytoscape has a REST API: `./cytoscape.sh -R 8888` ([doku](https://manual.cytoscape.org/en/3.5.0/Programmatic_Access_to_Cytoscape_Features_Scripting.html))
+
+# **stats**
+    * TODO: general status about Graph and involved entities
+        * e.g. distribution of entity use numbers/frequency
 
 * **preprocessing**
     * `preprocess.py` (uses paths in `contextgraph/config.py`)

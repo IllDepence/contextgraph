@@ -177,7 +177,8 @@ def _get_entity_coocurrence_edges(G, lim=-1):
 
         To make subsequent processing steps more efficient,
         also determine all common papers for each entity
-        pair.
+        pair as well as the earliest year in which any of those
+        papers was published.
     """
 
     cooc_edges = dict()
@@ -218,11 +219,21 @@ def _get_entity_coocurrence_edges(G, lim=-1):
                     if key not in cooc_edges:
                         cooc_edges[key] = {
                             'edge': [e1_id, e2_id],
-                            'cooc_pprs': set([ppr_id])
+                            'cooc_pprs': set([ppr_id]),
+                            'cooc_start_year': ppr_data['year'],
+                            'cooc_start_month': ppr_data['month']
                         }
                     else:
                         cooc_edges[key]['cooc_pprs'].add(
                             ppr_id
+                        )
+                        cooc_edges[key]['cooc_start_year'] = min(
+                            ppr_data['year'],
+                            cooc_edges[key]['cooc_start_year']
+                        )
+                        cooc_edges[key]['cooc_start_month'] = min(
+                            ppr_data['year'],
+                            cooc_edges[key]['cooc_start_month']
                         )
                     if lim > 0 and len(cooc_edges) >= lim:
                         lim_reached = True
@@ -267,15 +278,6 @@ def _get_pruned_graph(cooc_entity_pair, G):
 
     keep_node_ids = []
 
-    # determine earliest co-occurrence paper
-    thresh_year = 9999
-    thresh_month = 13
-    for cooc_ppr_id in cooc_entity_pair['cooc_pprs']:
-        ppr_data = G.nodes[cooc_ppr_id]
-        y = ppr_data['year']
-        m = ppr_data['month']
-        thresh_year = min(y, thresh_year)
-        thresh_month = min(m, thresh_month)
     # determine all papers published after earliest cooc ppr
     for node_id in G.nodes:
         node_data = G.nodes[node_id]
@@ -285,26 +287,48 @@ def _get_pruned_graph(cooc_entity_pair, G):
                 # (TODO: also consider other enitites
                 #  that should be removed)
                 keep_node_ids.append(node_id)
-            elif node_data['year'] < thresh_year and \
-                    node_data['month'] < thresh_month:
+            elif node_data['year'] < cooc_entity_pair['cooc_start_year'] and \
+                    node_data['month'] < cooc_entity_pair['cooc_start_month']:
                 # a paper but published early enough
                 keep_node_ids.append(node_id)
 
     return G.subgraph(keep_node_ids)
 
 
-def get_pair_graphs(n_pairs, G):
-    """ Load n_pairs *prunded* pair graphs.
+def get_pair_graphs(n_true_pairs, G):
+    """ Return 2 × n_true_pairs graphs with their respective prediction edge.
+            - half are *prunded* graphs of co-occurring entities
+            - the other half are *prunded* graphs of non-co-occurring entities
+
+        A pair of co-occurring entities are two differently typed entities
+        which have at least one common paper in which they are used.
     """
 
-    # first tests
-    #   10 pairs: 15s
-    #   15 pairs: 22s
-    #   25 pairs: 3min 26s
-    #   50 pairs: 3min 57s
-    #   100 pairs: 10min 40s
-    pair_grahps = []
-    cooc_edges = _get_entity_coocurrence_edges(G, n_pairs)
+    # get positive training examples
+    true_pair_grahps = []
+    # don’t apply limit here                       |
+    # b/c it’s fast enough to do the whole graph   V
+    cooc_edges = _get_entity_coocurrence_edges(G, -1)
+    # generate negative training examples
+    # # cluster co-occurrence edges by year of earliest cooc ppr
+    edge_year_clusters = dict()
+    for key, cooc_edge in cooc_edges.items():
+        # only use year here and not also month
+        if cooc_edge['cooc_start_year'] not in edge_year_clusters:
+            edge_year_clusters[cooc_edge['cooc_start_year']] = []
+        edge_year_clusters[cooc_edge['cooc_start_year']].append(
+            cooc_edge
+        )
+    # # generate corrupted co-occurrence edges by swapping entities
+    # # between edges in the same co-occurrence year cluster that
+    # # have disjoint co-occurrence paper sets
+    for cooc_start_year, cooc_edge_list in edge_year_clusters.items():
+        print(cooc_start_year)
+        print(len(cooc_edge_list))
+        # TODO take year distribution stratified sample s.t. corrent
+        #      number of positive and negative training examples can
+        #      be returned
+    return
     for key, cooc_edge in cooc_edges.items():
         # reduce to neighborhood that is potentially necessary (for speedup)
         neigh_G = _get_two_hop_pair_neighborhood_nodes(cooc_edge, G)
@@ -316,11 +340,11 @@ def get_pair_graphs(n_pairs, G):
             cooc_edge,
             pruned_G
         )
-        pair_grahps.append({
+        true_pair_grahps.append({
             'prediction_edge': cooc_edge,
             'graph': pruned_neigh_G
         })
-    return pair_grahps
+    return true_pair_grahps
 
 
 def make_shallow(G):
