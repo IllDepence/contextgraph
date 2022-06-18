@@ -15,10 +15,10 @@ import regex
 from collections import OrderedDict
 from functools import lru_cache
 import contextgraph.config as cg_config
-import nltk
-from nltk.tokenize import sent_tokenize
 import numpy as np
-nltk.download('punkt')
+# import nltk
+# from nltk.tokenize import sent_tokenize
+# nltk.download('punkt')
 
 # LENGTH_OF_LETTERS = 1000
 
