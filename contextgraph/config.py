@@ -36,3 +36,6 @@ graph_modls_to_pprs_fn = 'models_to_papers.csv'
 graph_ppr_to_ppr_fn = 'papers_to_papers.csv'
 # # for intermmediate processing steps
 graph_tasks_pre_fn = 'tasks_pre.jsonl'
+
+# datasets for ML
+graph_samples = "/tmp/sc_graph_samples"
