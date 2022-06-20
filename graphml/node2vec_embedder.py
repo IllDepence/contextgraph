@@ -21,11 +21,11 @@ class Node2VecEmbedder():
         self.pattern = pattern
         self.embeddings = None
 
-
     def prepare_samples(self):
 
         file_pairs = []
-        numbers = ["0" + str(i) for i in range(10)] + [str(i) for i in range(10, self.param.NUM_SAMPLES)]
+        numbers = ["0" + str(i) for i in range(10)] + \
+                  [str(i) for i in range(10, self.param.NUM_SAMPLES)]
 
         for num in numbers:
             file_graph = "pair_graph_sample_" + num + "_graph.json"
@@ -33,8 +33,8 @@ class Node2VecEmbedder():
             file_pairs.append((file_graph, file_pred))
         return file_pairs
 
-
-    def generate_atom_graph(self, file_dir, file_graph, file_pred, directed=True, export=False):
+    def generate_atom_graph(self, file_dir, file_graph, file_pred,
+                            directed=True, export=False):
 
         file_graph_path = os.path.join(file_dir, file_graph)
         file_pred_path = os.path.join(file_dir, file_pred)
@@ -145,4 +145,3 @@ class Node2VecEmbedder():
         self.embeddings = df_emb
 
         return df_emb
-
