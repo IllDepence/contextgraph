@@ -11,29 +11,30 @@ from tqdm import tqdm
 class Node2VecEmbedder():
 
     def __init__(self, param_object, pattern="avg"):
-
         '''
         param_object: a object from dataclass that stores all necessary hyperparameter for Node2Vec
         pattern: the pattern of how the final embedding of two embeddings of targets nodes are calculated
-
         '''
+
         self.param = param_object
         self.pattern = pattern
         self.embeddings = None
 
-    def prepare_samples(self):
+    def _prepare_samples(self):
 
         file_pairs = []
         numbers = ["0" + str(i) for i in range(10)] + \
-                  [str(i) for i in range(10, self.param.NUM_SAMPLES)]
+                  [str(i) for i in range(10, self.param.NUM_SAMPLES_PER_LABEL)]
+        labels = ["pos", "neg"]
 
         for num in numbers:
-            file_graph = "pair_graph_sample_" + num + "_graph.json"
-            file_pred = "pair_graph_sample_" + num + "_prediction_edge.json"
-            file_pairs.append((file_graph, file_pred))
+            for l in labels:
+                file_graph = "pair_graph_sample_"+l+"_"+num+"_graph.json"
+                file_pred = "pair_graph_sample_"+l+"_"+num+"_prediction_edge.json"
+                file_pairs.append((file_graph, file_pred, l))
         return file_pairs
 
-    def generate_atom_graph(self, file_dir, file_graph, file_pred,
+    def _generate_atom_graph(self, file_dir, file_graph, file_pred,
                             directed=True, export=False):
 
         file_graph_path = os.path.join(file_dir, file_graph)
@@ -64,15 +65,15 @@ class Node2VecEmbedder():
         atom_graph.add_edges_from(pairs)
 
         if export:
-            final_name = self.process_name(node_pair_to_predict)
+            final_name = self._process_name(node_pair_to_predict)
             # cooc_pprs = predicting["cooc_pprs"]
             nx.write_graphml(atom_graph, final_name)
 
         return atom_graph, node_pair_to_predict
 
     @staticmethod
-    def process_name(node_pair_to_predict):
-        '''simply get rid of "pwc" and return the concatenation of two node names'''
+    def _process_name(node_pair_to_predict):
+        '''get rid of "pwc" and return the concatenation of two node names'''
         node_names = [node.split(":")[-1].replace("/", "_") \
                       for node in node_pair_to_predict]
         final_name = node_names[0] + "-" + node_names[1]
@@ -97,51 +98,53 @@ class Node2VecEmbedder():
 
     def node_embedding(self, directory, directed=True, export_each_graph=False):
 
-        file_pairs = self.prepare_samples()
+        file_pairs = self._prepare_samples()
         df_emb = pd.DataFrame(columns=range(self.param.DIMENSIONS))
+        df_label = pd.DataFrame(columns=["label"])
 
         for file_pair in tqdm(file_pairs, desc="processing file pairs:"):
             file_graph = file_pair[0]
             file_pred = file_pair[1]
-            graph, node_pair_to_predict = self.generate_atom_graph(file_dir=directory,
+            label = file_pair[2]
+            graph, node_pair_to_predict = self._generate_atom_graph(file_dir=directory,
                                                                    file_graph=file_graph,
                                                                    file_pred=file_pred,
                                                                    directed=directed,
-                                                                   export=export_each_graph)
-
+                                                                  export=export_each_graph)
+            # skip the empty graphs
+            if len(graph.nodes) == 0:
+                continue
             node2vec = Node2Vec(graph,
                                 dimensions=self.param.DIMENSIONS,
                                 walk_length=self.param.WALK_LENGTH,
                                 num_walks=self.param.NUM_WALKS,
                                 seed=self.param.SEED
                                 )
-
             model = node2vec.fit(
                 window=self.param.WINDOW,
                 min_count=self.param.MIN_COUNT,
                 batch_words=self.param.BATCH_WORDS
             )
-
             embeddings = pd.DataFrame(
                 [model.wv.get_vector(str(n)) for n in graph.nodes()],
                 index=graph.nodes
             )
-
             try:
                 emb_target_nodes = embeddings.loc[node_pair_to_predict, :]
                 emb_serie = self.operate(emb_target_nodes, self.pattern)
             except:
                 emb_serie = pd.Series(index=range(128), dtype=np.float64)
 
-            final_name = self.process_name(node_pair_to_predict)
+            final_name = self._process_name(node_pair_to_predict)
             df_emb.loc[final_name, :] = emb_serie
+            df_label.loc[final_name, :] = label
 
+        df_ml = pd.concat([df_emb, df_label], axis=1)
         if df_emb.isnull().sum().sum() > 0:
-            message = "targets node in prediction files are not consistent \
-                        with nodes in graph file, check dataframe manully to \
-                        get more information"
+            message = "targets node in prediction files are not consistent " \
+                      "with nodes in graph file, check dataframe manully to " \
+                      "get more information"
             warnings.warn(message)
+        self.embeddings = df_ml
 
-        self.embeddings = df_emb
-
-        return df_emb
+        return df_ml

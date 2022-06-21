@@ -5,6 +5,6 @@ from node2vec_embedder import Node2VecEmbedder
 param = Parameters()
 node2vec_ = Node2VecEmbedder(param_object=param, pattern="avg")
 embeddings = node2vec_.node_embedding(directory=cg_config.graph_samples,
-                                      directed=True  # todo: what kind of graph to use?
+                                      directed=True
                                      )
-embeddings.to_pickle("/local/users/ujvxd/env/test.pkl")
+embeddings.to_pickle("/local/users/ujvxd/env/test2.pkl")
