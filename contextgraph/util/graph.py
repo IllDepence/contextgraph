@@ -1,8 +1,15 @@
 import csv
 import os
 import json
+import random
 import networkx as nx
+import numpy as np
 from contextgraph import config as cg_config
+
+
+class cooc_edge_dict(dict):
+    def __hash__(self):
+            return hash(tuple(sorted(self['edge'])))
 
 
 def _load_node_tuples(with_contexts=False):
@@ -217,12 +224,12 @@ def _get_entity_coocurrence_edges(G, lim=-1):
                         not (e1['type'] == 'model' and e2['type'] == 'method'):
                     key = '_'.join(sorted([e1_id, e2_id]))
                     if key not in cooc_edges:
-                        cooc_edges[key] = {
+                        cooc_edges[key] = cooc_edge_dict({
                             'edge': [e1_id, e2_id],
                             'cooc_pprs': set([ppr_id]),
                             'cooc_start_year': ppr_data['year'],
                             'cooc_start_month': ppr_data['month']
-                        }
+                        })
                     else:
                         cooc_edges[key]['cooc_pprs'].add(
                             ppr_id
@@ -295,6 +302,34 @@ def _get_pruned_graph(cooc_entity_pair, G):
     return G.subgraph(keep_node_ids)
 
 
+def _corrupted_cooc_eges(e1, e2):
+    """ Return corrupted co-occurrence edges by
+        swapping tail nodes.
+
+        Assumes that
+            - earliest co-occurrence paper of e1 and e1
+              were published in the same year.
+            - sets co-occurrence papers of e1 and e1 are
+              disjoint.
+    """
+
+    shared_cooc_start_year = e1['cooc_start_year']
+    default_cooc_start_month = 1
+    corr1 = cooc_edge_dict({
+        'edge': [e1['edge'][0], e2['edge'][1]],
+        'cooc_pprs': set(),  # empty
+        'cooc_start_year': shared_cooc_start_year,
+        'cooc_start_month': default_cooc_start_month,
+    })
+    corr2 = cooc_edge_dict({
+        'edge': [e2['edge'][0], e1['edge'][1]],
+        'cooc_pprs': set(),  # empty
+        'cooc_start_year': shared_cooc_start_year,
+        'cooc_start_month': default_cooc_start_month,
+    })
+    return [corr1, corr2]
+
+
 def get_pair_graphs(n_true_pairs, G):
     """ Return 2 × n_true_pairs graphs with their respective prediction edge.
             - half are *prunded* graphs of co-occurring entities
@@ -305,14 +340,13 @@ def get_pair_graphs(n_true_pairs, G):
     """
 
     # get positive training examples
-    true_pair_grahps = []
-    # don’t apply limit here                       |
-    # b/c it’s fast enough to do the whole graph   V
-    cooc_edges = _get_entity_coocurrence_edges(G, -1)
+    # # don’t apply limit here                          |
+    # # b/c it’s fast enough to do the whole graph      V
+    cooc_edges_full = _get_entity_coocurrence_edges(G, -1)
     # generate negative training examples
     # # cluster co-occurrence edges by year of earliest cooc ppr
     edge_year_clusters = dict()
-    for key, cooc_edge in cooc_edges.items():
+    for key, cooc_edge in cooc_edges_full.items():
         # only use year here and not also month
         if cooc_edge['cooc_start_year'] not in edge_year_clusters:
             edge_year_clusters[cooc_edge['cooc_start_year']] = []
@@ -322,29 +356,104 @@ def get_pair_graphs(n_true_pairs, G):
     # # generate corrupted co-occurrence edges by swapping entities
     # # between edges in the same co-occurrence year cluster that
     # # have disjoint co-occurrence paper sets
+    num_cooc_edges_full = sum([len(l) for k, l in edge_year_clusters.items()])
+    year_smpl_sizes = dict()
     for cooc_start_year, cooc_edge_list in edge_year_clusters.items():
-        print(cooc_start_year)
-        print(len(cooc_edge_list))
-        # TODO take year distribution stratified sample s.t. corrent
-        #      number of positive and negative training examples can
-        #      be returned
-    return
-    for key, cooc_edge in cooc_edges.items():
-        # reduce to neighborhood that is potentially necessary (for speedup)
-        neigh_G = _get_two_hop_pair_neighborhood_nodes(cooc_edge, G)
-        # remove paper nodes based on time constraint
-        pruned_G = _get_pruned_graph(cooc_edge, neigh_G)
-        # reduce to neighborhood (gets rid of stuff that is onyl
-        # connected in unpruned graph)
-        pruned_neigh_G = _get_two_hop_pair_neighborhood_nodes(
-            cooc_edge,
-            pruned_G
+        # determine co-occurrence year cluter characteristics
+        proportion = len(cooc_edge_list)/num_cooc_edges_full
+        if n_true_pairs > 0:
+            sample_size = round(n_true_pairs * proportion)
+        else:
+            sample_size = round(len(cooc_edge_list) * proportion)
+        year_smpl_sizes[cooc_start_year] = sample_size
+    # # make sure year samples add up to n_true_pairs
+    smpl_diff = n_true_pairs - sum(year_smpl_sizes.values())
+    fill_year = list(year_smpl_sizes.keys())[
+        np.argmax(year_smpl_sizes.values())
+    ]
+    year_smpl_sizes[fill_year] += smpl_diff
+    # # sample positive and negative prediction edges
+    cooc_edges_pos = set()
+    cooc_edges_neg = set()
+    for cooc_start_year, cooc_edge_list in edge_year_clusters.items():
+        sample_size = year_smpl_sizes[cooc_start_year]
+        if sample_size < 1:
+            continue
+        # create negative samples
+        shuf1 = random.sample(cooc_edge_list, len(cooc_edge_list))
+        shuf2 = random.sample(cooc_edge_list, len(cooc_edge_list))
+        size_reached = False
+        year_smpl_pos = set()
+        year_smpl_neg = set()
+        for cooc_edge1 in shuf1:
+            if size_reached:
+                break
+            for cooc_edge2 in shuf2:
+                if len(year_smpl_pos) >= sample_size and \
+                   len(year_smpl_neg) >= sample_size:
+                    size_reached = True
+                if len(set.intersection(
+                    cooc_edge1['cooc_pprs'],
+                    cooc_edge2['cooc_pprs']
+                )):
+                    # true prediction edges
+                    year_smpl_pos.add(cooc_edge1)
+                    year_smpl_pos.add(cooc_edge2)
+                    # false prediction edges
+                    corr1, corr2 = _corrupted_cooc_eges(
+                        cooc_edge1, cooc_edge2
+                    )
+                    year_smpl_neg.add(corr1)
+                    year_smpl_neg.add(corr2)
+        # cut year’s contribution to full sample to size
+        cooc_edges_pos.update(
+            random.sample(
+                year_smpl_pos,
+                min(sample_size, len(year_smpl_pos))
+                )
         )
-        true_pair_grahps.append({
-            'prediction_edge': cooc_edge,
-            'graph': pruned_neigh_G
-        })
-    return true_pair_grahps
+        cooc_edges_neg.update(
+            random.sample(
+                year_smpl_neg,
+                min(sample_size, len(year_smpl_neg))
+                )
+        )
+    # create graphs
+    true_pair_grahps = []
+    false_pair_grahps = []
+    for graph_list, edge_list in [
+        (true_pair_grahps, cooc_edges_pos),
+        (false_pair_grahps, cooc_edges_neg)
+    ]:
+        for cooc_edge in edge_list:
+            # reduce to neighborhood that is potentially necessary (speedup)
+            neigh_G = _get_two_hop_pair_neighborhood_nodes(cooc_edge, G)
+            # remove paper nodes based on time constraint
+            pruned_G = _get_pruned_graph(cooc_edge, neigh_G)
+            # reduce to neighborhood (gets rid of stuff that is onyl
+            # connected in unpruned graph)
+            pruned_neigh_G = _get_two_hop_pair_neighborhood_nodes(
+                cooc_edge,
+                pruned_G
+            )
+            graph_list.append({
+                'prediction_edge': cooc_edge,
+                'graph': pruned_neigh_G
+            })
+    # test for n_true_pairs = 200:
+    #
+    # In [204]: np.mean([len(x['graph'].nodes) for x in fls])
+    # Out[204]: 134.485
+    # In [205]: np.mean([len(x['graph'].nodes) for x in tru])
+    # Out[205]: 2742.075
+    # -> why fewer nodes for negative edges?
+    # TODO: debug
+    #
+    # In [202]: np.mean([len(x['graph'].edges) for x in fls])
+    # Out[202]: 193.685
+    # In [203]: np.mean([len(x['graph'].edges) for x in tru])
+    # Out[203]: 17480.44
+    return true_pair_grahps, false_pair_grahps
 
 
 def make_shallow(G):
