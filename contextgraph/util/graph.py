@@ -302,7 +302,7 @@ def _get_pruned_graph(cooc_entity_pair, G):
     return G.subgraph(keep_node_ids)
 
 
-def _corrupted_cooc_eges(e1, e2):
+def _corrupted_cooc_eges(e1, e2, G):
     """ Return corrupted co-occurrence edges by
         swapping tail nodes.
 
@@ -314,18 +314,39 @@ def _corrupted_cooc_eges(e1, e2):
     """
 
     shared_cooc_start_year = e1['cooc_start_year']
-    default_cooc_start_month = 1
+    # the start month of negative samples has a *LARGE*
+    # impact on the resulting size of pruned graphs,
+    # as many papers are published in a short time.
+    # tried
+    # - default 1 -> neg smpl graphs way smaller
+    # - default 6 -> "
+    # - for each corrupted edge take the
+    #   month of the entity which is more
+    #   connected -> "
+    # - same as above but never
+    #   less than 7 -> looks about right
+    # - default 12 -> neg smpl graphs somewhat larger
+    corr1_edge = [e1['edge'][0], e2['edge'][1]]
+    if len(G.adj[e1['edge'][0]]) > len(G.adj[e2['edge'][1]]):
+        corr1_month = e1['cooc_start_month']
+    else:
+        corr1_month = e2['cooc_start_month']
     corr1 = cooc_edge_dict({
-        'edge': [e1['edge'][0], e2['edge'][1]],
+        'edge': corr1_edge,
         'cooc_pprs': set(),  # empty
         'cooc_start_year': shared_cooc_start_year,
-        'cooc_start_month': default_cooc_start_month,
+        'cooc_start_month': max(corr1_month, 7),
     })
+    corr2_edge = [e2['edge'][0], e1['edge'][1]]
+    if len(G.adj[e2['edge'][0]]) > len(G.adj[e1['edge'][1]]):
+        corr2_month = e2['cooc_start_month']
+    else:
+        corr2_month = e1['cooc_start_month']
     corr2 = cooc_edge_dict({
-        'edge': [e2['edge'][0], e1['edge'][1]],
+        'edge': corr2_edge,
         'cooc_pprs': set(),  # empty
         'cooc_start_year': shared_cooc_start_year,
-        'cooc_start_month': default_cooc_start_month,
+        'cooc_start_month': max(corr2_month, 7),
     })
     return [corr1, corr2]
 
@@ -395,13 +416,13 @@ def get_pair_graphs(n_true_pairs, G):
                 if len(set.intersection(
                     cooc_edge1['cooc_pprs'],
                     cooc_edge2['cooc_pprs']
-                )):
+                )) == 0:
                     # true prediction edges
                     year_smpl_pos.add(cooc_edge1)
                     year_smpl_pos.add(cooc_edge2)
                     # false prediction edges
                     corr1, corr2 = _corrupted_cooc_eges(
-                        cooc_edge1, cooc_edge2
+                        cooc_edge1, cooc_edge2, G
                     )
                     year_smpl_neg.add(corr1)
                     year_smpl_neg.add(corr2)
