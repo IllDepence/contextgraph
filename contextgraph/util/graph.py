@@ -326,6 +326,11 @@ def _corrupted_cooc_eges(e1, e2, G):
     # - same as above but never
     #   less than 7 -> looks about right
     # - default 12 -> neg smpl graphs somewhat larger
+    # (clustering by year and month beforehand leads
+    #  to average cluster sizes of mean ~2.9 and
+    #  median 2 => swapping partners are not really
+    #  random anymore but determined by publishing month
+    #  => likely underirable)
     corr1_edge = [e1['edge'][0], e2['edge'][1]]
     if len(G.adj[e1['edge'][0]]) > len(G.adj[e2['edge'][1]]):
         corr1_month = e1['cooc_start_month']
