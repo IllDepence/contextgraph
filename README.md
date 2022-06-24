@@ -10,6 +10,7 @@
             * → group cooc edges by year of first cooc ppr
             * → from each year set take pairs of cooc edges with disjoint cooc ppr sets
             * → create negative examples by switching out entity nodes between such pairs
+        * take pruned 2-neighborhood graphs of positive examples and select other random pairs of enitites (consider for training. maybe not suited for evaluation)
 
 * **visualization** `contextgraph/visualization/`
     * `show_sample.py` (using nx + matplotlip)
