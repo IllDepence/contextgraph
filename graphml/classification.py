@@ -13,7 +13,7 @@ def create_embedding(path_to_store):
     embeddings = node2vec_.node_embedding(directory=cg_config.graph_samples,
                                           directed=True
                                          )
-    embeddings.to_pickle(path_to_store)
+    embeddings.to_csv(path_to_store)
     return embeddings
 
 
@@ -40,6 +40,7 @@ def split_data(dataframe, test_size=0.2):
                                                         )
     return X_train, X_test, y_train, y_test
 
+
 def main(data_path):
     embeddings = get_training_data(path_to_file=data_path)
     embeddings = preprocessing(embeddings)
@@ -57,6 +58,7 @@ def main(data_path):
                           )
     return performance_cv, evaluation
 
+
 if __name__ == "__main__":
-    path = "/local/users/ujvxd/env/embeddings_graph_sample.csv"
+    path = "/local/users/ujvxd/env/embeddings_graph_sample_new.csv"
     performance_cv, evaluation = main(path)

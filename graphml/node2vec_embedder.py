@@ -102,7 +102,7 @@ class Node2VecEmbedder():
         df_emb = pd.DataFrame(columns=range(self.param.DIMENSIONS))
         df_label = pd.DataFrame(columns=["label"])
 
-        for file_pair in tqdm(file_pairs[500:], desc="processing file pairs:"):
+        for file_pair in tqdm(file_pairs, desc="processing file pairs:"):
             file_graph = file_pair[0]
             file_pred = file_pair[1]
             label = file_pair[2]
