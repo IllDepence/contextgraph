@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
-
+from data_processing import prepare_samples, process_name, operate
 
 class Node2VecEmbedder():
 
@@ -20,19 +20,6 @@ class Node2VecEmbedder():
         self.pattern = pattern
         self.embeddings = None
 
-    def _prepare_samples(self):
-
-        file_pairs = []
-        numbers = ["0" + str(i) for i in range(10)] + \
-                  [str(i) for i in range(10, self.param.NUM_SAMPLES_PER_LABEL)]
-        labels = ["pos", "neg"]
-
-        for num in numbers:
-            for l in labels:
-                file_graph = "pair_graph_sample_"+l+"_"+num+"_graph.json"
-                file_pred = "pair_graph_sample_"+l+"_"+num+"_prediction_edge.json"
-                file_pairs.append((file_graph, file_pred, l))
-        return file_pairs
 
     def _generate_atom_graph(self, file_dir, file_graph, file_pred,
                             directed=True, export=False):
@@ -65,40 +52,16 @@ class Node2VecEmbedder():
         atom_graph.add_edges_from(pairs)
 
         if export:
-            final_name = self._process_name(node_pair_to_predict)
+            final_name = process_name(node_pair_to_predict)
             # cooc_pprs = predicting["cooc_pprs"]
             nx.write_graphml(atom_graph, final_name)
 
         return atom_graph, node_pair_to_predict
 
-    @staticmethod
-    def _process_name(node_pair_to_predict):
-        '''get rid of "pwc" and return the concatenation of two node names'''
-        node_names = [node.split(":")[-1].replace("/", "_") \
-                      for node in node_pair_to_predict]
-        final_name = node_names[0] + "-" + node_names[1]
-        return final_name
-
-    @staticmethod
-    def operate(df_2r, pattern):
-
-        if pattern == "avg":
-            return df_2r.sum()
-        elif pattern == "hadamard":
-            return df_2r.iloc[0, :] * df_2r.iloc[1, :0]
-        elif pattern == "l1":
-            return np.abs(df_2r.iloc[0, :] - df_2r.iloc[1, :])
-        elif pattern == "l2":
-            return (df_2r.iloc[0, :] - df_2r.iloc[1, :]) ** 2
-        else:
-            message = 'A unsupported pattern for processing embeddings of \
-                        two target nodes has been given, please use a correct \
-                        pattern from either "avg", "hadamard", "l1" or "l2"'
-            warnings.warn(message)
 
     def node_embedding(self, directory, directed=True, export_each_graph=False):
 
-        file_pairs = self._prepare_samples()
+        file_pairs = prepare_samples(self.param)
         df_emb = pd.DataFrame(columns=range(self.param.DIMENSIONS))
         df_label = pd.DataFrame(columns=["label"])
 
@@ -131,11 +94,14 @@ class Node2VecEmbedder():
             )
             try:
                 emb_target_nodes = embeddings.loc[node_pair_to_predict, :]
-                emb_serie = self.operate(emb_target_nodes, self.pattern)
+                emb_serie = operate(emb_target_nodes, self.pattern)
             except:
-                emb_serie = pd.Series(index=range(128), dtype=np.float64)
+                emb_serie = pd.Series(
+                    index=range(self.param.DIMENSIONS),
+                    dtype=np.float64
+                )
 
-            final_name = self._process_name(node_pair_to_predict)
+            final_name = process_name(node_pair_to_predict)
             df_emb.loc[final_name, :] = emb_serie
             df_label.loc[final_name, :] = label
 
