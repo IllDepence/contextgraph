@@ -3,6 +3,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from statistics import mean
@@ -20,9 +22,15 @@ def create_models():
                                   C=0.5,
                                   max_iter=10000
                                   )
+    clfs["SVMNonLinear"] = SVC(kernel="rbf",
+                               C=0.5,
+                               gamma="scale",
+                               random_state=42
+                               )
     clfs["DecisionTree"] = DecisionTreeClassifier()
     clfs["RandomForest"] = RandomForestClassifier()
     clfs["NaiveBayes"] = GaussianNB()
+    clfs["MLPClassifier"] = MLPClassifier(solver="adam")
     return clfs
 
 
