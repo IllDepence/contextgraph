@@ -3,6 +3,7 @@
 * **prediction** `contextgraph/prediction/`
     * *training sample generation*
         * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
+        * using two-hop neighborhoods took ~21h for the whole graph
     * sampling of negative training examples
         * “currupt edge” (one entity of co-occurrence edge swapped to random)
             * pruning problem: no common using papers through which to determine paper publication threshold
