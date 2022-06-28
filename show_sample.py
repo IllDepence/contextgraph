@@ -3,6 +3,8 @@ import os
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import random
+from collections import defaultdict
 
 # TODO
 # - position prediction edge nodes when layouting
@@ -17,16 +19,40 @@ fn = f'{fn_base}_prediction_edge.json'
 with open(os.path.join(base_bath, fn)) as f:
     prediction_edge = json.load(f)
 
-print(nx.info(G))
-# pos = nx.spring_layout(
-#     G,
-#     k=1/np.sqrt(len(G.nodes)),
-#     iterations=200  # detault is 50
-# )
-# pos[prediction_edge['edge'][0]][0] -= 1.5
-# pos[prediction_edge['edge'][1]][0] += 1.5
+# # fixed positions for prediction edge nodes
+# fixpos = {
+#     prediction_edge['edge'][0]: [-1.5, 0],
+#     prediction_edge['edge'][1]: [1.5, 0]
+# }
+# # center startposition of non
+pos = dict()
+for node_id, node_data in G.nodes.items():
+    if node_id not in prediction_edge['edge']:
+        pos[node_id] = [
+            random.randint(-7, 7)*.1,
+            random.randint(-7, 7)*.1
+        ]
+pos[prediction_edge['edge'][0]] = [-15, 0]
+pos[prediction_edge['edge'][1]] = [15, 0]
 
-pos = nx.kamada_kawai_layout(G)
+fixed = prediction_edge['edge']
+# pos = {
+#     prediction_edge['edge'][0]: [-1.5, 0],
+#     prediction_edge['edge'][1]: [1.5, 0]
+# }
+
+print(nx.info(G))
+pos = nx.spring_layout(
+    G,
+    k=1/np.sqrt(len(G.nodes)),
+    iterations=200,  # detault is 50
+    pos=pos,
+    fixed=fixed
+)
+pos[prediction_edge['edge'][0]][0] -= 1.5
+pos[prediction_edge['edge'][1]][0] += 1.5
+
+# pos = nx.kamada_kawai_layout(G)
 # TODO: test different dist values
 
 # pos = nx.spectral_layout(G)
