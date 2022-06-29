@@ -392,12 +392,13 @@ def get_pair_graphs(n_true_pairs, G):
         else:
             sample_size = round(len(cooc_edge_list) * proportion)
         year_smpl_sizes[cooc_start_year] = sample_size
-    # # make sure year samples add up to n_true_pairs
-    smpl_diff = n_true_pairs - sum(year_smpl_sizes.values())
-    fill_year = list(year_smpl_sizes.keys())[
-        np.argmax(year_smpl_sizes.values())
-    ]
-    year_smpl_sizes[fill_year] += smpl_diff
+    if n_true_pairs > 0:
+        # # make sure year samples add up to n_true_pairs
+        smpl_diff = n_true_pairs - sum(year_smpl_sizes.values())
+        fill_year = list(year_smpl_sizes.keys())[
+            np.argmax(year_smpl_sizes.values())
+        ]
+        year_smpl_sizes[fill_year] += smpl_diff
     # # sample positive and negative prediction edges
     cooc_edges_pos = set()
     cooc_edges_neg = set()
