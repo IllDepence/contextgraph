@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import networkx as nx
-from contextgraph.util.graph import load_graph, get_pair_graphs
+from contextgraph.util.graph import load_full_graph, get_pair_graphs
 
 
 def export_cyto(fp, G):
@@ -15,7 +15,7 @@ def export_cyto(fp, G):
 
 def export_samples_cyto(fp, num_samples):
     print('loading graph')
-    G = load_graph()  # shallow=True
+    G = load_full_graph()  # shallow=True
     print('generating samples')
     samples_pos, samples_neg = get_pair_graphs(int(num_samples/2), G)
     for posneg, samples in [

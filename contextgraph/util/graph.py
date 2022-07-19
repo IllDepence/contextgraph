@@ -12,19 +12,20 @@ class cooc_edge_dict(dict):
             return hash(tuple(sorted(self['edge'])))
 
 
-def _load_node_tuples(with_contexts=False):
+def _load_node_tuples(with_contexts=False, entities_only=False):
     """ loads nodes as (<id>, <properties>) tuples
     """
 
     entity_tuples = []
     # first all regularly stored entities
     node_fns = [
-        cg_config.graph_pprs_fn,
         cg_config.graph_meths_fn,
         cg_config.graph_dsets_fn,
         cg_config.graph_tasks_fn,
         cg_config.graph_modls_fn,
     ]
+    if not entities_only:
+        node_fns.append(cg_config.graph_pprs_fn)
     if with_contexts:
         node_fns.append(cg_config.graph_cntxts_fn)
     for fn in node_fns:
@@ -37,6 +38,8 @@ def _load_node_tuples(with_contexts=False):
         cg_config.graph_data_dir,
         cg_config.graph_meth_areas_fn
     )) as f:
+        if entities_only:
+            pass
         for line in f:
             # area
             area = json.loads(line)
@@ -392,12 +395,13 @@ def get_pair_graphs(n_true_pairs, G):
         else:
             sample_size = round(len(cooc_edge_list) * proportion)
         year_smpl_sizes[cooc_start_year] = sample_size
-    # # make sure year samples add up to n_true_pairs
-    smpl_diff = n_true_pairs - sum(year_smpl_sizes.values())
-    fill_year = list(year_smpl_sizes.keys())[
-        np.argmax(year_smpl_sizes.values())
-    ]
-    year_smpl_sizes[fill_year] += smpl_diff
+    if n_true_pairs > 0:
+        # # make sure year samples add up to n_true_pairs
+        smpl_diff = n_true_pairs - sum(year_smpl_sizes.values())
+        fill_year = list(year_smpl_sizes.keys())[
+            np.argmax(year_smpl_sizes.values())
+        ]
+        year_smpl_sizes[fill_year] += smpl_diff
     # # sample positive and negative prediction edges
     cooc_edges_pos = set()
     cooc_edges_neg = set()
@@ -500,7 +504,86 @@ def make_shallow(G):
     return shallow_G
 
 
-def load_graph(shallow=False, directed=True, with_contexts=False):
+def _load_entity_combi_edge_tuples(final_node_set=False, scheme='sequence'):
+    """ Determine edges tuples that represent the
+        number of co-occurrence papers between entities.
+
+        schemes:
+            - sequence: time sequence of co-occurences
+            - weight: number of co-occurences
+    """
+
+    # not the most time efficient, but simply
+    # go from the full graph using existing code
+    G = load_full_graph()
+    cooc_edges_full = _get_entity_coocurrence_edges(G, -1)
+    # create combi edges
+    edge_tuples = []
+    # determine earliest cooc ppr in current data is from 1994
+    cooc_years = []
+    for k, ce in cooc_edges_full.items():
+        cooc_years.append(ce['cooc_start_year'])
+    beginning_of_time = min(cooc_years)
+    for key, cooc_edge in cooc_edges_full.items():
+        ppr_a_id = cooc_edge['edge'][0]
+        ppr_b_id = cooc_edge['edge'][1]
+        if scheme == 'sequence':
+            # build co-occurence time sequence
+            cooc_time_sequence = []
+            cooc_ppr_sequence = []
+            for ppr_id in cooc_edge['cooc_pprs']:
+                y = G.nodes[ppr_id]['year']
+                m = G.nodes[ppr_id]['month']
+                # there is also day info, but mby not so relevant
+                if y > 0 and m > 0:  # is -1 if info not given
+                    year_in_cooc_time = y - beginning_of_time
+                    month_in_cooc_time = (year_in_cooc_time * 12) + m
+                    cooc_time_sequence.append(month_in_cooc_time)
+                    cooc_ppr_sequence.append(ppr_id)
+            edge_property = {
+                'interaction_sequence': cooc_time_sequence,
+                'linker_sequence': cooc_ppr_sequence
+            }
+        elif scheme == 'weight':
+            # TODO:
+            # consider then using add_weighted_edges_from later
+            edge_property = {'weight': len(cooc_edge['cooc_pprs'])}
+        if not final_node_set or \
+                (final_node_set and
+                 ppr_a_id in final_node_set and
+                 ppr_b_id in final_node_set):
+            edge_tuples.append(
+                (
+                    ppr_a_id,
+                    ppr_b_id,
+                    edge_property
+                )
+            )
+    return edge_tuples
+
+
+def load_entity_combi_graph():
+    """ Load graph only containing the entity nodes,
+        connected by weighted edges that represent the
+        number of co-occurrence papers.
+
+        NOTE: to access edge attributes later,
+               G.edges(data=True) has to be used!
+    """
+
+    node_tuples = _load_node_tuples(entities_only=True)
+    edge_tuples = _load_entity_combi_edge_tuples(
+        # make sure not to give networkx a reason to implicitly
+        # add empty, untyped nodes because of edges
+        final_node_set=set([ntup[0] for ntup in node_tuples])
+    )
+    G = nx.Graph()
+    G.add_nodes_from(node_tuples)
+    G.add_edges_from(edge_tuples)
+    return G
+
+
+def load_full_graph(shallow=False, directed=True, with_contexts=False):
     """ Load nodes and edges into a NetworkX digraph.
 
         If shallow is True, all node and edge features

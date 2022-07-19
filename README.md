@@ -3,14 +3,23 @@
 * **prediction** `contextgraph/prediction/`
     * *training sample generation*
         * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
-            * TODO: negative training samples (also see TODOs down below)
-    * negative sampling:
+        * using two-hop neighborhoods took ~21h for the whole graph
+    * sampling of negative training examples
         * “currupt edge” (one entity of co-occurrence edge swapped to random)
             * pruning problem: no common using papers through which to determine paper publication threshold
             * → group cooc edges by year of first cooc ppr
             * → from each year set take pairs of cooc edges with disjoint cooc ppr sets
             * → create negative examples by switching out entity nodes between such pairs
-        * take pruned 2-neighborhood graphs of positive examples and select other random pairs of enitites (consider for training. maybe not suited for evaluation)
+        * take pruned 2-neighborhood graphs of positive examples and select other random pairs of enitites (consider for training. *maybe not suited for evaluation*)
+            * appropriate (also well suited?) for training
+            * *not* realistic for testing
+                * **TODO**: create test set according to realistic application setting of model
+                * number of possible random entity combinations might be too dominating  
+                  → consider restriction by area (only NLP methods w/ NLP tasks or similar)
+    * alternative prediction task
+        * in: input entity pair (mby w/ focus on cited papers of using papers)
+        * out: set of papers that the co-occurrence papers cite
+        * intuition: if you were to write a combining paper, which papers would you need to cite/would you be influenced by
 
 * **visualization** `contextgraph/visualization/`
     * `show_sample.py` (using nx + matplotlip)
