@@ -55,7 +55,7 @@ def _clean_dataframe(df):
 
 
 def _get_bow_vectors(df):
-    vectorizer = CountVectorizer()
+    vectorizer = CountVectorizer(stop_words="english")
     result = vectorizer.fit_transform(df.description)
     df_bow = pd.DataFrame(
         result.toarray(),
