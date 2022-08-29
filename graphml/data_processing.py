@@ -1,11 +1,16 @@
 import warnings
 import numpy as np
+import os
+import json
+import networkx as nx
 
 def prepare_samples(param_object):
 
     file_pairs = []
-    numbers = ["0" + str(i) for i in range(10)] + \
-              [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
+    # numbers = ["0" + str(i) for i in range(10)] + \
+    #           [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
+    # numbers = [str(i) for i in range(6500, 7000)]
+    numbers = [str(i) for i in range(0, 3)]
     labels = ["pos", "neg"]
 
     for num in numbers:
@@ -39,3 +44,40 @@ def operate(df_2r, pattern):
                     two target nodes has been given, please use a correct \
                     pattern from either "avg", "hadamard", "l1" or "l2"'
         warnings.warn(message)
+
+def generate_atom_graph(file_dir, file_graph, file_pred,
+                         directed=True, export=False):
+
+    file_graph_path = os.path.join(file_dir, file_graph)
+    file_pred_path = os.path.join(file_dir, file_pred)
+    with open(file_graph_path, "r") as g:
+        data = json.load(g)
+    with open(file_pred_path, "r") as p:
+        predicting = json.load(p)
+    node_pair_to_predict = predicting["edge"]
+    elements = data.get("elements", {})
+
+    nodes = []
+    pairs = []
+    for node in elements["nodes"]:
+        info = node["data"]
+        nodes.append((info["id"],
+                      {"type": info["type"]}))
+    for edge in elements["edges"]:
+        structure = edge["data"]
+        pairs.append((structure["source"],
+                      structure["target"],
+                      {"type": structure["type"]}))
+    if directed:
+        atom_graph = nx.DiGraph()
+    else:
+        atom_graph = nx.Graph()
+    atom_graph.add_nodes_from(nodes)
+    atom_graph.add_edges_from(pairs)
+
+    if export:
+        final_name = process_name(node_pair_to_predict)
+        # cooc_pprs = predicting["cooc_pprs"]
+        nx.write_graphml(atom_graph, final_name)
+
+    return atom_graph, node_pair_to_predict

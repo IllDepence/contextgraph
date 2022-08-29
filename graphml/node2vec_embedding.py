@@ -1,63 +1,21 @@
-import networkx as nx
 from node2vec import Node2Vec
-import os
-import json
 import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
-from data_processing import prepare_samples, process_name, operate
+from data_processing import prepare_samples, process_name, operate, generate_atom_graph
 
 class Node2VecEmbedder():
 
-    def __init__(self, param_object, pattern="avg"):
+    def __init__(self, param_object):
         '''
         param_object: a object from dataclass that stores all necessary hyperparameter for Node2Vec
         pattern: the pattern of how the final embedding of two embeddings of targets nodes are calculated
         '''
 
         self.param = param_object
-        self.pattern = pattern
+        self.pattern = self.param.PATTERN
         self.embeddings = None
-
-
-    def _generate_atom_graph(self, file_dir, file_graph, file_pred,
-                            directed=True, export=False):
-
-        file_graph_path = os.path.join(file_dir, file_graph)
-        file_pred_path = os.path.join(file_dir, file_pred)
-        with open(file_graph_path, "r") as g:
-            data = json.load(g)
-        with open(file_pred_path, "r") as p:
-            predicting = json.load(p)
-        node_pair_to_predict = predicting["edge"]
-        elements = data.get("elements", {})
-
-        nodes = []
-        pairs = []
-        for node in elements["nodes"]:
-            info = node["data"]
-            nodes.append((info["id"],
-                          {"type": info["type"]}))
-        for edge in elements["edges"]:
-            structure = edge["data"]
-            pairs.append((structure["source"],
-                          structure["target"],
-                          {"type": structure["type"]}))
-        if directed:
-            atom_graph = nx.DiGraph()
-        else:
-            atom_graph = nx.Graph()
-        atom_graph.add_nodes_from(nodes)
-        atom_graph.add_edges_from(pairs)
-
-        if export:
-            final_name = process_name(node_pair_to_predict)
-            # cooc_pprs = predicting["cooc_pprs"]
-            nx.write_graphml(atom_graph, final_name)
-
-        return atom_graph, node_pair_to_predict
-
 
     def node_embedding(self, directory, directed=True, export_each_graph=False):
 
@@ -69,11 +27,12 @@ class Node2VecEmbedder():
             file_graph = file_pair[0]
             file_pred = file_pair[1]
             label = file_pair[2]
-            graph, node_pair_to_predict = self._generate_atom_graph(file_dir=directory,
-                                                                   file_graph=file_graph,
-                                                                   file_pred=file_pred,
-                                                                   directed=directed,
-                                                                  export=export_each_graph)
+            graph, node_pair_to_predict = generate_atom_graph(file_dir=directory,
+                                                              file_graph=file_graph,
+                                                              file_pred=file_pred,
+                                                              directed=directed,
+                                                              export=export_each_graph
+                                                              )
             # skip the empty graphs
             if len(graph.nodes) == 0:
                 continue

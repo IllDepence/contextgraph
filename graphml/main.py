@@ -2,13 +2,14 @@ from classification import get_training_data, split_data
 from models import create_models, cross_validate_models, get_performance_of_cv, evaluate
 from parameters import Parameters
 
-def main(data_path_node2vec, data_path_bow, param, process_pattern, with_text_info):
+def main(data_path_node2vec, data_path_bow, param, process_pattern_bow, embedding_method, with_text_info):
 
     embeddings = get_training_data(
         data_path_node2vec=data_path_node2vec,
         data_path_bow=data_path_bow,
         param=param,
-        process_pattern=process_pattern,
+        process_pattern_bow=process_pattern_bow,
+        embedding_method=embedding_method,
         with_text_info=with_text_info
     )
     X_train, X_test, y_train, y_test = split_data(
@@ -33,12 +34,14 @@ def main(data_path_node2vec, data_path_bow, param, process_pattern, with_text_in
 
 
 if __name__ == "__main__":
-    data_path_node2vec = "/local/users/ujvxd/env/embeddings_graph_sample_new.csv"
-    data_path_bow = "/local/users/ujvxd/env/embeddings_bow.csv"
+    data_path_node2vec = "/local/users/ujvxd/env/embeddings_graph_sample_6500_7000.csv"
+    data_path_bow = "/local/users/ujvxd/env/embeddings_bow_3000_3500.csv"
     param = Parameters()
     performance_cv, evaluation = main(
         data_path_node2vec=data_path_node2vec,
         data_path_bow=data_path_bow,
         param=param,
-        process_pattern="avg",
-        with_text_info=True)
+        process_pattern_bow="avg",
+        embedding_method="node2vec",
+        with_text_info=False
+    )
