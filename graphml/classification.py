@@ -5,6 +5,7 @@ from contextgraph import config as cg_config
 from bow_embedding import create_bow_embedding_for_ml
 from node2vec_embedding import Node2VecEmbedder
 from attri2vec_embedding import Attri2VecEmbedder
+from gcn_embedding import GCNEmbedder
 
 def create_embedding(path_to_store, param, embedding_method):
 
@@ -12,6 +13,9 @@ def create_embedding(path_to_store, param, embedding_method):
         embedder = Node2VecEmbedder(param_object=param)
     elif embedding_method=="attri2vec":
         embedder = Attri2VecEmbedder(param_object=param)
+    elif embedding_method=="gcn":
+        embedder = GCNEmbedder(param_object=param)
+
     embeddings = embedder.node_embedding(
         directory=cg_config.graph_samples,
         directed=True
