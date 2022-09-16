@@ -1,8 +1,8 @@
 # Overview
 
 * [Usage](#usage)
-* [Data used](#data)
-* [Development notes](development.md)
+* [Data used](development.md#data)
+* [Development notes](development.md#directory-structure-overview)
 * [Progress tracking](progress_tracking.md)
 
 # Usage
