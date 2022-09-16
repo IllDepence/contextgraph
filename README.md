@@ -1,109 +1,41 @@
-# Code
+# Overview
 
-* **prediction** `contextgraph/prediction/`
-    * *training sample generation*
-        * `export_cytoscape_data.py` &gt; `export_samples_cyto()`
-        * using two-hop neighborhoods took ~21h for the whole graph
-    * sampling of negative training examples
-        * “currupt edge” (one entity of co-occurrence edge swapped to random)
-            * pruning problem: no common using papers through which to determine paper publication threshold
-            * → group cooc edges by year of first cooc ppr
-            * → from each year set take pairs of cooc edges with disjoint cooc ppr sets
-            * → create negative examples by switching out entity nodes between such pairs
-        * take pruned 2-neighborhood graphs of positive examples and select other random pairs of enitites (consider for training. *maybe not suited for evaluation*)
-            * appropriate (also well suited?) for training
-            * *not* realistic for testing
-                * **TODO**: create test set according to realistic application setting of model
-                * number of possible random entity combinations might be too dominating  
-                  → consider restriction by area (only NLP methods w/ NLP tasks or similar)
-    * alternative prediction task
-        * in: input entity pair (mby w/ focus on cited papers of using papers)
-        * out: set of papers that the co-occurrence papers cite
-        * intuition: if you were to write a combining paper, which papers would you need to cite/would you be influenced by
+* [Usage](#usage)
+* [Data used](#data)
+* [Development notes](development.md)
+* [Progress tracking](progress_tracking.md)
 
-* **visualization** `contextgraph/visualization/`
-    * `show_sample.py` (using nx + matplotlip)
-    * `export_cytoscape_data.py` + Cytoscape (for manual inspection)
-        * side note: Cytoscape has a REST API: `./cytoscape.sh -R 8888` ([doku](https://manual.cytoscape.org/en/3.5.0/Programmatic_Access_to_Cytoscape_Features_Scripting.html))
+# Usage
 
-# **stats**
-    * TODO: general status about Graph and involved entities
-        * e.g. distribution of entity use numbers/frequency
+### Loading the graph data
 
-* **preprocessing**
-    * `preprocess.py` (uses paths in `contextgraph/config.py`)
-    *  `contextgraph/preprocessing/`
-        * `crawler.py`
-        * `dsets.py`  (requires `crawl_dataset_papers.py` output)
-        * `meths.py`
-        * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output)
-        * `pprs.py`  (requires `preprocess_evaltables.py` output)
-        * `cit_netw.py`  (requires `preprocess_papers.py` output)
-        * `ppr_cntxts.py` (requires output of all of the above)
-            * requires module `regex` (not `re`)
+The methods described below can be impored from `contextgraph.util.graph`.  
+You’ll also want to `import networkx as nx` in your code.
 
-* **exploration** `exploration/`
-    * `notebooks/` - for *temporary* development and quick overviews. always move code to be re-used/shared into proper Python scripts
-    * `pwc_matching_poc.py` - match entities from Papers With Code in unarXive paper plaintexts
-    * `matching_result_ui/` - web UI to show matching results
+##### load\_full\_graph()
 
+Returns a version of the graph in which nodes and endges have properties.
 
-# Conceptual considerations
+parameter | values | default | explanation
+--------- | ------ | ------- | -----------
+shallow   | bool   | False   | True: all node and edge features except for type will be discarded.
+&zwnj;    | &zwnj; | &zwnj;  | False: nodes and edges have features according to the data available on Papers with Code.
+directed  | bool   | True    | True: Return the graph as an nx.DiGraph.
+&zwnj;    | &zwnj; | &zwnj;  | False: Return the graph as an nx.Graph.
+directed  | bool   | True    | True: Return the graph as an nx.DiGraph (for an overview of directions of edges see `_load_edge_tuples` in `contextgraph/util/graph.py`).
+&zwnj;    | &zwnj; | &zwnj;  | False: Return the graph as an nx.Graph.
+with\_contexts  | bool | False | True: Also load “context” nodes (each appearance of a used entity in a paper results in a context node connected as entity--part\_of-&gt;context--part\_of-&gt;paper). **Be aware** that this will result in *a lot* of additional nodes.
+&zwnj;    | &zwnj; | &zwnj;  | False: Don’t load context nodes.
 
-### Modeling for basic GNN
+##### load\_entity\_combi\_graph()
 
-* maybe get rid over ppr nodes and create `used_rogether` edges
+Load graph only containing the entity nodes connected by edges which represent their co-occurrence papers based on a *scheme* setting described below. (**NOTE**: to access edge attributes later, G.edges(data=True) has to be used!)
 
+parameter | values | default | explanation
+--------- | ------ | ------- | -----------
+scheme    | {'weight', 'sequence'} | 'sequence' | 'sequence': edges have two properties (1) `linker_sequence` (a list of the co-occurrence paper IDs) and (2) `interaction_sequence` (a list of integers to be understood as “time steps”. Each integer value is the `<month>` in which a co-occurrence paper is published. The month in which the very first co-occurrence paper within the returned graph is published in month 0).
+&zwnj;    | &zwnj; | &zwnj;  | 'weight': edges have a weight attribute that denotes the number of co-occurrene papers that exist between the two entities.
 
-# Data
+# Schema
 
-### unarXive
-
-* papers: `/home/ls3data/datasets/unarXive/papers/<id>.txt`
-* refs DB: `/home/ls3data/datasets/unarXive/papers/refs.db`
-
-### paperswithcode
-
-* `/home/ls3data/datasets/paperswithcode`
-
-
-# TODOs
-
-* preprocess paperswithcode to ✔
-    * jsonl file per given entity type (method, dataset, task, paper) ✔
-    * extra entities (model, method-collection, collection-area) ✔
-    * mappings using pwc URL slugs between entities ✔
-* extend data with unarXive
-    * citation graph ✔
-    * extracted contexts ✔
-        * more sophisticated context span determination (see `add_paper_contexts.py:204`)
-* work with graph
-    * PoC for working with a graph library ✔
-    * add currently missing data
-        * method collections and areas ✔
-        * entity contexts ✔
-        * topological encoding of paper publication order
-    * create visualization
-    * explore different settings (directed, undirected, additional edges for symmetrical relationships, special transitive relationships, etc.)
-    * create function for generating train/val/test data
-        * pairs of entities which
-            * have at least one common paper
-            * are of dissimilar type (also not model+method)
-            * have a using paper with a given minimum age (e.g. from 2010)
-        * pruning of
-            * all papers older that the first common paper
-            * used_together edges
-            * ... (more?)
-* prediction
-    * create a first set of data to evaluate and develop methods
-        * prediction edge considerations:
-            * “virtual” edges between diff. typ. entities w/ a common paper
-            * edges between meths and dsets which have an evaltbl row
-            * the union of both of the above
-            * TODO: calculate numbers for the above
-    * try simple methods
-        * topology only
-        * topology + pre-computed embeddings for node features
-    * try GNNs
-        * directed vs. undirected graph
-        * typed vs. untyped edges
+TODO: document all node and edge types with the properties they can have here.

@@ -528,7 +528,7 @@ def _load_entity_combi_edge_tuples(final_node_set=False, scheme='sequence'):
         ppr_a_id = cooc_edge['edge'][0]
         ppr_b_id = cooc_edge['edge'][1]
         if scheme == 'sequence':
-            # build co-occurence time sequence
+            # build co-occurrence time sequence
             cooc_time_sequence = []
             cooc_ppr_sequence = []
             for ppr_id in cooc_edge['cooc_pprs']:
@@ -562,7 +562,7 @@ def _load_entity_combi_edge_tuples(final_node_set=False, scheme='sequence'):
     return edge_tuples
 
 
-def load_entity_combi_graph():
+def load_entity_combi_graph(scheme='sequence'):
     """ Load graph only containing the entity nodes,
         connected by weighted edges that represent the
         number of co-occurrence papers.
@@ -575,7 +575,8 @@ def load_entity_combi_graph():
     edge_tuples = _load_entity_combi_edge_tuples(
         # make sure not to give networkx a reason to implicitly
         # add empty, untyped nodes because of edges
-        final_node_set=set([ntup[0] for ntup in node_tuples])
+        final_node_set=set([ntup[0] for ntup in node_tuples]),
+        scheme=scheme
     )
     G = nx.Graph()
     G.add_nodes_from(node_tuples)
