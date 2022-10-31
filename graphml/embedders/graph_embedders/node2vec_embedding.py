@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from tqdm import tqdm
-from data_processing import prepare_samples, process_name, operate, generate_atom_graph
+from graphml.preprocessor.graph_processing import prepare_samples, process_name, operate, generate_atom_graph
 
 class Node2VecEmbedder():
 
@@ -14,7 +14,7 @@ class Node2VecEmbedder():
         '''
 
         self.param = param_object
-        self.pattern = self.param.PATTERN
+        self.pattern = self.param.PATTERN_GRAPH
         self.embeddings = None
 
     def node_embedding(self, directory, directed=True, export_each_graph=False):

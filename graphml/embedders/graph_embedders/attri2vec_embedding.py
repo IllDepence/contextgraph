@@ -9,7 +9,7 @@ from stellargraph import StellarGraph
 from stellargraph.data import UnsupervisedSampler
 from stellargraph.layer import Attri2Vec, link_classification
 from stellargraph.mapper import Attri2VecLinkGenerator, Attri2VecNodeGenerator
-from data_processing import prepare_samples, process_name, operate, generate_atom_graph
+from graphml.preprocessor.graph_processing import prepare_samples, process_name, operate, generate_atom_graph
 
 
 class Attri2VecEmbedder():
@@ -21,7 +21,7 @@ class Attri2VecEmbedder():
         '''
 
         self.param = param_object
-        self.pattern = self.param.PATTERN
+        self.pattern = self.param.PATTERN_GRAPH
         self.embeddings = None
 
     def create_stellargraph(self, graph):
@@ -60,7 +60,9 @@ class Attri2VecEmbedder():
                               normalize=None
                               )
         x_inp, x_out = attri2vec.in_out_tensors()
-        prediction = link_classification(output_dim=1, output_act="sigmoid", edge_embedding_method="ip")(x_out)
+        prediction = link_classification(output_dim=1,
+                                         output_act="sigmoid",
+                                         edge_embedding_method="ip")(x_out)
         model = keras.Model(inputs=x_inp, outputs=prediction)
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=self.param.LEARNING_RATE),
                       loss=keras.losses.binary_crossentropy,

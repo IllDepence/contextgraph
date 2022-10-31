@@ -4,14 +4,15 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import tensorflow as tf
+from sklearn import model_selection
 from sklearn.preprocessing import OneHotEncoder
-from stellargraph.layer import GCN
 from stellargraph import StellarGraph
-from stellargraph.mapper import FullBatchNodeGenerator
-from data_processing import prepare_samples, process_name, operate, generate_atom_graph
+from stellargraph.layer import RGCN
+from stellargraph.mapper import RelationalFullBatchNodeGenerator
+from graphml.preprocessor.graph_processing import prepare_samples, process_name, operate, generate_atom_graph
 
 
-class GCNEmbedder():
+class RGCNEmbedder():
 
     def __init__(self, param_object):
         '''
@@ -20,7 +21,7 @@ class GCNEmbedder():
         '''
 
         self.param = param_object
-        self.pattern = self.param.PATTERN
+        self.pattern = self.param.PATTERN_GRAPH
         self.embeddings = None
 
     def create_stellargraph(self, graph):
@@ -30,10 +31,12 @@ class GCNEmbedder():
         df["type"] = [node[-1].get("type", "task") for node in graph.nodes(data=True)]
         df = df.set_index("node")
         enc = OneHotEncoder(handle_unknown='ignore')
-        vec_onehot = enc.fit_transform(df).toarray()
-
+        df_onehot = pd.DataFrame(enc.fit_transform(df).toarray(),
+                                 index=df.index,
+                                 columns=enc.categories_
+                                 )
         features_dict = dict()
-        for row in pd.DataFrame(vec_onehot, index=df.index, columns=enc.categories_).iterrows():
+        for row in df_onehot.iterrows():
             features_dict[row[0]] = list(row[1])
         nx.set_node_attributes(graph, features_dict, "feature")
         stellargraph = StellarGraph.from_networkx(graph,
@@ -41,32 +44,48 @@ class GCNEmbedder():
                                                   edge_type_attr="type",
                                                   node_type_default="task"
                                                   )
-        return stellargraph, vec_onehot
+        return stellargraph, df_onehot
 
-    def gcn_learn(self, stellargraph, training_labels):
-        nodes = list(stellargraph.nodes())
-        generator = FullBatchNodeGenerator(stellargraph, method="gcn")
-        train_gen = generator.flow(nodes, training_labels)
-        gcn = GCN(layer_sizes=[self.param.DIMENSIONS, self.param.DIMENSIONS],
-                  activations=["relu", "relu"],
-                  generator=generator,
-                  dropout=0.5
-                  )
-        x_inp, x_out = gcn.in_out_tensors()
-        predictions = tf.keras.layers.Dense(units=training_labels.shape[1], activation="softmax")(x_out)
-        model = tf.keras.Model(inputs=x_inp, outputs=predictions)
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.param.LEARNING_RATE_GCN),
-                      loss=tf.keras.losses.categorical_crossentropy,
+    def rgcn_learn(self, stellargraph, df_onehot):
+        train_targets, test_targets = model_selection.train_test_split(df_onehot, test_size=0.2)
+        generator = RelationalFullBatchNodeGenerator(stellargraph, sparse=True)
+        train_gen = generator.flow(train_targets.index, targets=train_targets)
+        test_gen = generator.flow(test_targets.index, targets=test_targets)
+
+        rgcn = RGCN(layer_sizes=[self.param.DIMENSIONS, self.param.DIMENSIONS],
+                    activations=[self.param.ACTIVATION, self.param.ACTIVATION],
+                    generator=generator,
+                    bias=True,
+                    num_bases=self.param.NUM_BASES,
+                    dropout=self.param.DROPOUT
+                    )
+        x_in, x_out = rgcn.in_out_tensors()
+        predictions = tf.keras.layers.Dense(train_targets.shape[-1],
+                                            activation="softmax"
+                                            )(x_out)
+        model = tf.keras.models.Model(inputs=x_in, outputs=predictions)
+        model.compile(loss=tf.keras.losses.categorical_crossentropy,
+                      optimizer=tf.keras.optimizers.Adam(learning_rate=self.param.LEARNING_RATE_RGCN),
                       metrics=["acc"]
                       )
+
+        es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_loss",
+                                                       patience=self.param.ES_PATIENCE,
+                                                       restore_best_weights=True
+                                                       )
         _ = model.fit(train_gen,
-                      epochs=self.param.EPOCHS_GCN,
-                      verbose=0,
-                      shuffle=False
-                    )
-        embedding_model = tf.keras.Model(inputs=x_inp, outputs=x_out)
-        emb = embedding_model.predict(generator.flow(nodes))
-        embeddings = pd.DataFrame(emb.squeeze(0), index=nodes)
+                      validation_data=test_gen,
+                      epochs=self.param.EPOCHS_RGCN,
+                      callbacks=[es_callback],
+                      verbose=0
+                      )
+
+        embedding_model = tf.keras.models.Model(inputs=x_in, outputs=x_out)
+        emb = embedding_model.predict(generator.flow(df_onehot.index,
+                                                     targets=df_onehot
+                                                     )
+                                      )
+        embeddings = pd.DataFrame(emb.squeeze(0), index=df_onehot.index)
         return embeddings
 
     def node_embedding(self, directory, directed=True, export_each_graph=False):
@@ -88,8 +107,8 @@ class GCNEmbedder():
             # skip the empty graphs
             if len(graph.nodes) == 0:
                 continue
-            stellargraph, vec_onehot = self.create_stellargraph(graph)
-            embeddings = self.gcn_learn(stellargraph, vec_onehot)
+            stellargraph, df_onehot = self.create_stellargraph(graph)
+            embeddings = self.rgcn_learn(stellargraph, df_onehot)
             # it can happen that to be predicted nodes not exist in this atom graph
             try:
                 emb_target_nodes = embeddings.loc[node_pair_to_predict, :]
