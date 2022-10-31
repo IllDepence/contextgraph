@@ -1,16 +1,15 @@
-import warnings
-import numpy as np
 import os
 import json
+import warnings
+import numpy as np
+import pandas as pd
 import networkx as nx
 
 def prepare_samples(param_object):
 
     file_pairs = []
-    # numbers = ["0" + str(i) for i in range(10)] + \
-    #           [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
+    numbers = ["0" + str(i) for i in range(10)] + [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
     # numbers = [str(i) for i in range(6500, 7000)]
-    numbers = [str(i) for i in range(0, 3)]
     labels = ["pos", "neg"]
 
     for num in numbers:
@@ -32,7 +31,7 @@ def process_name(node_pair_to_predict):
 def operate(df_2r, pattern):
 
     if pattern == "avg":
-        return df_2r.sum()
+        return df_2r.sum()/2
     elif pattern == "hadamard":
         return df_2r.iloc[0, :] * df_2r.iloc[1, :0]
     elif pattern == "l1":
@@ -46,7 +45,7 @@ def operate(df_2r, pattern):
         warnings.warn(message)
 
 def generate_atom_graph(file_dir, file_graph, file_pred,
-                         directed=True, export=False):
+                        directed=True, export=False):
 
     file_graph_path = os.path.join(file_dir, file_graph)
     file_pred_path = os.path.join(file_dir, file_pred)
