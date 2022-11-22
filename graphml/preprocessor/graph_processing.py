@@ -2,34 +2,47 @@ import os
 import json
 import warnings
 import numpy as np
-import pandas as pd
 import networkx as nx
 
+
 def prepare_samples(param_object):
+    '''
+    Generates the file pairs that contains both json file for creating nx graph,
+    the detailed info for this nx graph, and the respective label of the graph.
+    Number of generated paires is defined in ../parameters.py
+    '''
 
     file_pairs = []
-    numbers = ["0" + str(i) for i in range(10)] + [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
-    # numbers = [str(i) for i in range(6500, 7000)]
+    numbers = ["0" + str(i) for i in range(10)] + \
+              [str(i) for i in range(10, param_object.NUM_SAMPLES_PER_LABEL)]
     labels = ["pos", "neg"]
 
     for num in numbers:
         for l in labels:
-            file_graph = "pair_graph_sample_" + l +"_" + num +"_graph.json"
-            file_pred = "pair_graph_sample_" + l +"_" + num +"_prediction_edge.json"
+            file_graph = "pair_graph_sample_" + l + "_" + num + "_graph.json"
+            file_pred = "pair_graph_sample_" + l + "_" + num + \
+                        "_prediction_edge.json"
             file_pairs.append((file_graph, file_pred, l))
     return file_pairs
 
 
 def process_name(node_pair_to_predict):
-    '''get rid of "pwc" and return the concatenation of two node names'''
-    node_names = [node.split(":")[-1].replace("/", "_") \
+    '''
+    get rid of "pwc" and returns a concatenation of two node names
+    '''
+    node_names = [node.split(":")[-1].replace("/", "_")
                   for node in node_pair_to_predict]
     final_name = node_names[0] + "-" + node_names[1]
     return final_name
 
 
 def operate(df_2r, pattern):
-
+    '''
+    Defines how the embedding vectors of two nodes will be combined.
+    Supported patterns are "avg" / "hadamard" / "l1" / "l2". For
+    underlying reasons of this operation, please refer to the original
+    publication of Node2Vec method
+    '''
     if pattern == "avg":
         return df_2r.sum()/2
     elif pattern == "hadamard":
@@ -44,9 +57,19 @@ def operate(df_2r, pattern):
                     pattern from either "avg", "hadamard", "l1" or "l2"'
         warnings.warn(message)
 
+
 def generate_atom_graph(file_dir, file_graph, file_pred,
                         directed=True, export=False):
-
+    '''
+    Generates single nx graph.
+    Parameters
+    ----------
+    file_dir: the directory of all graph samples
+    file_path: name/path of the certain graph
+    file_path: name/path of the certain "xxx_prediction_edge.json" file
+    directed: whether directed graph shall be created
+    export: whether to export the single nx graph to graphml file
+    '''
     file_graph_path = os.path.join(file_dir, file_graph)
     file_pred_path = os.path.join(file_dir, file_pred)
     with open(file_graph_path, "r") as g:
