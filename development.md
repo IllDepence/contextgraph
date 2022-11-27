@@ -42,6 +42,14 @@ I.e., how the code is organized and what it is doing. Also some notes mixed with
 # **stats**
     * *TODO*: general status about Graph and involved entities
         * e.g. distribution of entity use numbers/frequency
+* **graph status**
+    * On the whole graph level
+        * The complete whole graph has 284760 nodes in total, over 91% of them are "paper"
+        * The whole graph has an average degree of 8.1, the largest degree is 145232 for the entity "pwc:task/classification", around 98.7% percent of all entities have a degree lower than 50
+        * Based on node type, a small portion of "task" has a degree over 1000; for "paper" and "task", the degrees of almost all entities are below 1000; degrees of "dataset" nodes are obviously below 1000; although there is a large amount of "model" type of nodes, their degrees are mostly below 3. (Details can be found in Notebook "statistical analysis")
+    * On the samples level 
+        * An average degree of 5 of graphs seem to be usual, a small portion of samples has relatively higher average degree, but no higher than 25
+        * While the average degrees of sample graphs have no big difference across positive and negative classes, the average degree of target nodes is significantly higher for positive samples than negative ones, suggesting that positve samples are indeed more "well-connected" (more often combined with other entities)  
 
 * **preprocessing**
     * `preprocess.py` (uses paths in `contextgraph/config.py`)
