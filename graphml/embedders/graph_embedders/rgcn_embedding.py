@@ -54,6 +54,7 @@ class RGCNEmbedder():
         return stellargraph, df_onehot
 
     def rgcn_learn(self, stellargraph, df_onehot):
+        tf.config.experimental.enable_tensor_float_32_execution(False)
         train_targets, test_targets = model_selection.train_test_split(
             df_onehot,
             test_size=0.2

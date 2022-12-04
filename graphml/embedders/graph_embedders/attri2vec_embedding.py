@@ -3,6 +3,7 @@ import networkx as nx
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+import tensorflow as tf
 from tensorflow import keras
 from sklearn.preprocessing import OneHotEncoder
 from stellargraph import StellarGraph
@@ -81,6 +82,7 @@ class Attri2VecEmbedder():
 
 
     def atrri2vec_learn(self, stellargraph):
+        tf.config.experimental.enable_tensor_float_32_execution(False)
         nodes = list(stellargraph.nodes())
         unsupervised_samples = UnsupervisedSampler(
             stellargraph,

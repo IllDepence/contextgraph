@@ -55,6 +55,13 @@ class GATEmbedder():
 
     def gat_learn(self, stellargraph, df_onehot):
 
+        '''
+        One tricky issue about this learning function is
+        the compatibility of tf module, one has to disable
+        TF32 first, please refer to this thread:
+        https://github.com/tensorflow/tensorflow/issues/57359
+        '''
+        tf.config.experimental.enable_tensor_float_32_execution(False)
         train_targets, test_targets = model_selection.train_test_split(
             df_onehot,
             test_size=0.2
@@ -96,19 +103,13 @@ class GATEmbedder():
             patience=self.param.ES_PATIENCE,
             restore_best_weights=True
         )
-        mc_callback = tf.keras.callbacks.ModelCheckpoint(
-            "logs/best_model.h5",
-            monitor="val_acc",
-            save_best_only=True,
-            save_weights_only=True
-        )
         _ = model.fit(
             train_gen,
             epochs=self.param.EPOCHS_GAT,
             validation_data=val_gen,
             verbose=0,
             shuffle=False,
-            callbacks=[es_callback, mc_callback]
+            callbacks=[es_callback]
         )
         emb_layer = next(l for l in model.layers
                          if l.name.startswith("graph_attention")

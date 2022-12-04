@@ -77,6 +77,7 @@ class GCNEmbedder():
         return stellargraph, vec_onehot
 
     def gcn_learn(self, stellargraph, training_labels):
+        tf.config.experimental.enable_tensor_float_32_execution(False)
         nodes = list(stellargraph.nodes())
         generator = FullBatchNodeGenerator(
             stellargraph,
