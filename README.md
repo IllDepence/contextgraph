@@ -1,9 +1,20 @@
 # Overview
 
+* [Coordination](#coordination)
 * [Usage](#usage)
 * [Data used](development.md#data)
 * [Development notes](development.md#directory-structure-overview)
 * [Progress tracking](progress_tracking.md)
+
+# Coordination
+
+### Issues
+
+* Create issues to track tasks and point out problems.
+
+### Chat
+
+* Use the project’s **[Matrix channel](https://matrix.to/#/!TJpokbSjPiQzYMsiFC:kit.edu?via=kit.edu)** to communication with everyone involved.
 
 # Usage
 
