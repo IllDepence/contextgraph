@@ -1,4 +1,30 @@
-# Progress and TODOs
+# Progress and TODOs (2023~)
+
+* re-consider assumptions
+    * combined artifact use
+        * general notion sound?
+        * how pre-determined based on specificity of methods/tasks/data sets?
+    * use of artifacts in papers
+        * possible GNN applications for novel papers (e.g. based on citations)?
+* update paperswithcode data
+    * ✔ downloaded [paperswithcode/paperswithcode-data](https://github.com/paperswithcode/paperswithcode-data) on 2023/01/11, stored in `ls3data/datasets/paperswithcode_2023`
+    * ✔ started crawling of extra data on 2023/01/11, running on icarus in tmux session `contextgraph_crawl_pwc`
+    * **TODO** preprocessing
+    * **TODO** maybe add download of [paperswithcode/paperswithcode-data](https://github.com/paperswithcode/paperswithcode-data) to code (i.e. if not present in `pwc_data_dir`)
+* combination with unarXive (update to unarXive 2022 data?)
+    * extracted contexts: more straight forward b/c of paragraph structure; possible w/o OpenAlex matching done
+    * citation graph: requires OpenAlex matching to be tone
+* work with graph
+    * properly handle as dynamic graph
+        * consider [DyNetX](https://github.com/GiulioRossetti/dynetx)
+        * ...
+    * “numerical graph” for GNN applications
+    * visualization
+    * new functions for generating train/val/test data?
+* prediction
+    * ...
+
+# Progress and TODOs (~2022)
 
 * preprocess paperswithcode to ✔
     * jsonl file per given entity type (method, dataset, task, paper) ✔
