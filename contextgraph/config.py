@@ -1,5 +1,5 @@
 # papers with code data
-pwc_data_dir = '/home/ls3data/datasets/paperswithcode/'
+pwc_data_dir = '/home/ls3data/datasets/paperswithcode_2023/'
 pwc_dsets_fn = 'datasets.json'
 pwc_meths_fn = 'methods.json'
 pwc_evals_fn = 'evaluation-tables.json'
@@ -13,7 +13,7 @@ unarxive_paper_dir = '/opt/unarXive/unarXive-2020/papers/'
 unarxive_db_fn = 'refs.db'
 
 # preprocessed graph data
-graph_data_dir = '/home/ls3data/datasets/paperswithcode/preprocessed/'
+graph_data_dir = '/home/ls3data/datasets/paperswithcode_2023/preprocessed/'
 # # nodes
 graph_dsets_fn = 'datasets.jsonl'
 graph_meths_fn = 'methods.jsonl'
