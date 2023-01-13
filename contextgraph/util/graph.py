@@ -33,13 +33,14 @@ def _load_node_tuples(with_contexts=False, entities_only=False):
             for line in f:
                 entity = json.loads(line)
                 entity_tuples.append((entity['id'], entity))
+    if entities_only:
+        # already done, b/c areas and collections will not be added
+        return entity_tuples
     # then some special processing for the areas to collections data
     with open(os.path.join(
         cg_config.graph_data_dir,
         cg_config.graph_meth_areas_fn
     )) as f:
-        if entities_only:
-            pass
         for line in f:
             # area
             area = json.loads(line)
