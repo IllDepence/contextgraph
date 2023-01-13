@@ -50,3 +50,43 @@ scheme    | {'weight', 'sequence'} | 'sequence' | 'sequence': edges have two pro
 # Schema
 
 TODO: document all node and edge types with the properties they can have here.
+
+* node features
+    * tasks
+        * id (str)
+        * type (str)
+        * name (str)
+        * description (str)
+        * categories (list)
+    * method
+        * url (str)
+        * name (str)
+        * full_name (str)
+        * description (str)
+        * paper (dict)
+        * introduced_year (int)
+        * source_url (str)
+        * source_title (str)
+        * code_snippet_url (str)
+        * num_papers (int)
+        * id (str)
+        * type (str)
+    * dataset
+        * url (str)
+        * name (str)
+        * full_name (str)
+        * homepage (str)
+        * description (str)
+        * paper (dict)
+        * introduced_date (str)
+        * warning (NoneType)
+        * modalities (list)
+        * languages (list)
+        * num_papers (int)
+        * data_loaders (list)
+        * id (str)
+        * type (str)
+        * year (int)
+        * month (int)
+        * day (int)
+        * variant_surface_forms (list)
