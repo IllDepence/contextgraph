@@ -264,7 +264,11 @@ def preprocess_evaltables():
         csv_writer = csv.writer(
             f,
             delimiter=',',
-            quoting=csv.QUOTE_NONE
+            quoting=csv.QUOTE_ALL  # used just here because paper URLS
+            #                        can contain characters that need
+            #                        escaping. accordingly, QUOTE_ALL
+            #                        also is used in pprs.py when reading
+            #                        this file (which is deleted later)
         )
         csv_writer.writerow([
             'model_id',

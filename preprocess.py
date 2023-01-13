@@ -1,6 +1,7 @@
 import os
 import contextgraph.config as cg_config
 from contextgraph.preprocessing.crawler import crawl_dataset_papers
+from contextgraph.preprocessing.util import ensure_graph_data_dir
 from contextgraph.preprocessing.dsets import preprocess_datasets
 from contextgraph.preprocessing.meths import preprocess_methods
 from contextgraph.preprocessing.evaltbls import preprocess_evaltables
@@ -18,6 +19,7 @@ ext_dsets_fp = os.path.join(
 if not os.path.isfile(ext_dsets_fp):
     crawl_dataset_papers()
 
+ensure_graph_data_dir()
 print('preprocessing data sets')
 preprocess_datasets()
 print('preprocessing methods')

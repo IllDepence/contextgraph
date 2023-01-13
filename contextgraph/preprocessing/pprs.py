@@ -71,7 +71,9 @@ def preprocess_papers(verbose=False):
         csv_reader = csv.DictReader(
             f,
             delimiter=',',
-            quoting=csv.QUOTE_NONE
+            quoting=csv.QUOTE_ALL  # written with QUOTE_ALL because paper URLs
+            #                        may need escaping. everywhere else we use
+            #                        QUOTE_NONE b/c PwC IDs are safe
         )
         for row in csv_reader:
             modls_to_pprs_pre.append([
