@@ -47,9 +47,21 @@ parameter | values | default | explanation
 scheme    | {'weight', 'sequence'} | 'sequence' | 'sequence': edges have two properties (1) `linker_sequence` (a list of the co-occurrence paper IDs) and (2) `interaction_sequence` (a list of integers to be understood as “time steps”. Each integer value is the `<month>` in which a co-occurrence paper is published. The month in which the very first co-occurrence paper within the returned graph is published in month 0).
 &zwnj;    | &zwnj; | &zwnj;  | 'weight': edges have a weight attribute that denotes the number of co-occurrene papers that exist between the two entities.
 
-# Schema
 
-TODO: document all node and edge types with the properties they can have here.
+# Graph schema
+
+### Full graph
+
+(what you get using `load_full_graph()`)
+
+TODO
+
+### Entitiy combi graph
+
+(what you get using `load_entity_combi_graph()`)
+
+<details>
+<summary>networkx</summary>
 
 * node features
     * tasks
@@ -61,20 +73,20 @@ TODO: document all node and edge types with the properties they can have here.
     * method
         * url (str)
         * name (str)
-        * full_name (str)
+        * full\_name (str)
         * description (str)
         * paper (dict)
-        * introduced_year (int)
-        * source_url (str)
-        * source_title (str)
-        * code_snippet_url (str)
-        * num_papers (int)
+        * introduced\_year (int)
+        * source\_url (str)
+        * source\_title (str)
+        * code\_snippet_url (str)
+        * num\_papers (int)
         * id (str)
         * type (str)
     * dataset
         * url (str)
         * name (str)
-        * full_name (str)
+        * full\_name (str)
         * homepage (str)
         * description (str)
         * paper (dict)
@@ -83,10 +95,38 @@ TODO: document all node and edge types with the properties they can have here.
         * modalities (list)
         * languages (list)
         * num_papers (int)
-        * data_loaders (list)
+        * data\_loaders (list)
         * id (str)
         * type (str)
         * year (int)
         * month (int)
         * day (int)
-        * variant_surface_forms (list)
+        * variant\_surface\_forms (list)
+
+</details>
+
+<details>
+<summary>torch geometric</summary>
+
+* node features
+    * tasks
+        * id (int)
+        * type (one-hot encoding)
+        * description (bag of words)
+        * categories (one-hot enconding)
+    * method
+        * id (int)
+        * type (one-hot encoding)
+        * description (bag of words)
+        * introduced\_year (int)
+        * num\_papers (int)
+    * dataset
+        * id (int)
+        * type (one-hot encoding)
+        * description (bag of words)
+        * introduced\_date (int)
+        * modalities (one-hot encoding)
+        * num\_papers (int)
+        * data\_loaders (int (number of data loaders))
+
+</details>
