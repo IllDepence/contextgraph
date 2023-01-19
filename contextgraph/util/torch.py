@@ -1,75 +1,75 @@
-""" Make graph data usable with PyTorch Geometric
+""" Methods for loading the graph for pytorch gemoetric
 """
 
-import os
-import torch
 import networkx as nx
 from torch_geometric.utils.convert import from_networkx
-from torch_geometric.data import Dataset
-from contextgraph.config import graph_data_dir
 from contextgraph.util.graph import _load_node_tuples,\
                                     _load_entity_combi_edge_tuples
 
 
-class EntityCombiGraph(Dataset):
-    def __init__(
-        self, root=None, transform=None, pre_transform=None, pre_filter=None
-    ):
-        super().__init__(root, transform, pre_transform, pre_filter)
+def load_full_graph():
+    """ Return full graph in a form usable with torch geometric.
+    """
 
-    @property
-    def raw_file_names(self):
-        return ['']
+    raise NotImplementedError
 
-    @property
-    def processed_file_names(self):
-        return ['data_0.pt']
 
-    @property
-    def processed_dir(self) -> str:
-        return os.path.join(graph_data_dir, 'pyg_data')
+def load_entity_combi_graph():
+    """ Return entity combi graph in a form usable with torch geometric.
+    """
 
-    def process(self):
-        """ Note: usually iterates over all samples.
-            For testing we just load the final graph as a
-            single sample
-        """
+    # load node and edge tuples (with full, non-numeric features)
+    node_tuples = _load_node_tuples(entities_only=True)
+    edge_tuples = _load_entity_combi_edge_tuples(
+        final_node_set=set([ntup[0] for ntup in node_tuples]),
+        scheme='weight'  # use weight scheme b/c it gives us a single integer
+        #                  feature for edges rather than a variable length list
+    )
 
-        node_tuples = _load_node_tuples(entities_only=True)
-        edge_tuples = _load_entity_combi_edge_tuples(
-            final_node_set=set([ntup[0] for ntup in node_tuples]),
-            scheme='weight'
+    # build networkx graph for later conversion
+    G = nx.Graph()
+    # convert node features
+    node_tuples_numerical = []
+    node_id_numerical_map = {}
+    node_type_map = {
+        'dataset': 0,
+        'method': 1,
+        'model': 2,
+        'task': 3
+    }
+    for new_node_id, ntup in enumerate(node_tuples):
+        old_node_id = ntup[0]
+        nattrs = ntup[1]
+        node_id_numerical_map[old_node_id] = new_node_id  # assign numerical ID
+        attribs_num = {
+            'id': new_node_id,  # needed as explicit attribute here?
+            'type': node_type_map[nattrs['type']],
+            'description': 0,  # TODO: implement conversion
+            # 'num_papers': nattrs.get('num_papers', -1)  # only meths & dsets
+            # TODO: figure out/discuss how to handle different node types
+            #       (i.e. a heterogeneous graph)
+        }
+        node_tuples_numerical.append(
+            (new_node_id, attribs_num)
         )
-        G = nx.Graph()
-        node_tuples_numerical = []
-        for ntup in node_tuples:
-            # features
-            # - already numeric
-            #   - method: introduced_year, num_papers
-            #   - dataset: year, month, day, num_papers
-            #   - task: n/a
-            attribs_num = {
-                'num_papers': ntup[1].get('num_papers', -1)
-            }
-            node_tuples_numerical.append(
-                (ntup[0], attribs_num)
+    G.add_nodes_from(node_tuples_numerical)
+    # convert edge features
+    edge_tuples_numerical = []
+    for etup in edge_tuples:
+        attribs_num = {
+            'weight': etup[2].get('weight', -1)
+        }
+        edge_tuples_numerical.append(
+            (
+                node_id_numerical_map[etup[0]],  # numerical node ID
+                node_id_numerical_map[etup[1]],  # numerical node ID
+                attribs_num
             )
-        G.add_nodes_from(node_tuples_numerical)
-        G.add_edges_from(edge_tuples)
-        data = from_networkx(
-            G,
-            group_node_attrs=['num_papers'],
-            group_edge_attrs=['weight']
         )
-        idx = 0
-        torch.save(
-            data,
-            os.path.join(self.processed_dir, f'data_{idx}.pt')
-        )
-
-    def len(self):
-        return len(self.processed_file_names)
-
-    def get(self, idx):
-        data = torch.load(os.path.join(self.processed_dir, f'data_{idx}.pt'))
-        return data
+    G.add_edges_from(edge_tuples_numerical)
+    data = from_networkx(
+        G,
+        group_node_attrs=['id', 'type', 'description'],
+        group_edge_attrs=['weight']
+    )
+    return data

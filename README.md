@@ -83,6 +83,12 @@ TODO
         * num\_papers (int)
         * id (str)
         * type (str)
+    * model
+        * id (str)
+        * type (str)
+        * name (str)
+        * using\_paper\_titles (list)
+        * evaluations (list)
     * dataset
         * url (str)
         * name (str)
@@ -110,19 +116,24 @@ TODO
 
 * node features
     * tasks
-        * id (int)
-        * type (one-hot encoding)
+        * id (ordinal)
+        * type (ordinal)
         * description (bag of words)
         * categories (one-hot enconding)
     * method
-        * id (int)
-        * type (one-hot encoding)
+        * id (ordinal)
+        * type (ordinal)
         * description (bag of words)
         * introduced\_year (int)
         * num\_papers (int)
+    * model
+        * id (ordinal)
+        * type (ordinal)
+        * num\_papers (int) (derived from using\_paper\_titles)
+        * evaluations (int (number of evaluations))
     * dataset
-        * id (int)
-        * type (one-hot encoding)
+        * id (ordinal)
+        * type (ordinal)
         * description (bag of words)
         * introduced\_date (int)
         * modalities (one-hot encoding)
