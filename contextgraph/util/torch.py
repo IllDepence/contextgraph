@@ -25,7 +25,7 @@ def load_entity_combi_graph():
         scheme='weight'  # use weight scheme b/c it gives us a single integer
         #                  feature for edges rather than a variable length list
     )
-
+    # combi_edge: extend paper nodes into relationship between (paper, artifact, method, dataset)
     # build networkx graph for later conversion
     G = nx.Graph()
     # convert node features
@@ -73,3 +73,4 @@ def load_entity_combi_graph():
         group_edge_attrs=['weight']
     )
     return data
+
