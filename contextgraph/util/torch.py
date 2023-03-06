@@ -5,6 +5,7 @@ import networkx as nx
 from torch_geometric.utils.convert import from_networkx
 from contextgraph.util.graph import _load_node_tuples,\
                                     _load_entity_combi_edge_tuples
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def load_full_graph():
@@ -47,6 +48,25 @@ def get_artifact_description(node_attrs, G):
     return descr
 
 
+def embed_string_atrs_tfidf(node_attrs):
+    """ Transform a list of node string attributes (one attr per node)
+        into tfidf vectors
+    """
+
+    vectorizer = TfidfVectorizer(
+        max_features=None,
+        stop_words=None,
+        # consider limiting the number of features to reduce embeding
+        # size. NOTE however, that vocab cut-off is done based on
+        # term frequency (might remove important but rare words (proper
+        # nouns) from features
+    )
+    tfidf_vectors = vectorizer.fit_transform(
+        node_attrs,
+    )
+    return tfidf_vectors
+
+
 def load_entity_combi_graph():
     """ Return entity combi graph in a form usable with torch geometric.
     """
@@ -71,6 +91,15 @@ def load_entity_combi_graph():
         'model': 2,
         'task': 3
     }
+    # # prepare node description embeddings
+    G_lookup = nx.Graph()
+    G_lookup.add_nodes_from(node_tuples)
+    node_descrs = [
+        get_artifact_description(ntup[1], G_lookup)
+        for ntup in node_tuples
+    ]
+    node_descr_vecs = embed_string_atrs_tfidf(node_descrs)
+    # # covert other feautures
     for new_node_id, ntup in enumerate(node_tuples):
         old_node_id = ntup[0]
         nattrs = ntup[1]
@@ -78,7 +107,14 @@ def load_entity_combi_graph():
         attribs_num = {
             'id': new_node_id,  # needed as explicit attribute here?
             'type': node_type_map[nattrs['type']],
-            'description': 0,  # TODO: implement conversion
+            'description': 0
+            # 'description': node_descr_vecs[new_node_id].todense()
+            # ^ currently fails with
+            # AttributeError: 'matrix' object has no attribute 'dim'
+            # see:
+            # https://github.com/pyg-team/pytorch_geometric/issues/4445
+            # https://github.com/pyg-team/pytorch_geometric/pull/4486
+
             # 'num_papers': nattrs.get('num_papers', -1)  # only meths & dsets
             # TODO: figure out/discuss how to handle different node types
             #       (i.e. a heterogeneous graph)
