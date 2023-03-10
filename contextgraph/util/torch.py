@@ -1,6 +1,9 @@
 """ Methods for loading the graph for pytorch gemoetric
 """
 
+import os
+import json
+import numpy as np
 import networkx as nx
 from torch_geometric.utils.convert import from_networkx
 from contextgraph.util.graph import _load_node_tuples,\
@@ -91,23 +94,34 @@ def load_entity_combi_graph():
         'model': 2,
         'task': 3
     }
-    # # prepare node description embeddings
-    G_lookup = nx.Graph()
-    G_lookup.add_nodes_from(node_tuples)
-    node_descrs = [
-        get_artifact_description(ntup[1], G_lookup)
-        for ntup in node_tuples
-    ]
-    node_descr_vecs = embed_string_atrs_tfidf(node_descrs)
+    # # prepare LLM node description embeddings
+    emb_dir = 'combigraph_mpnet-base_embeddings'
+    idmap_fn = 'nodeid_to_fn.json'
+    with open(os.path.join(emb_dir, idmap_fn)) as f:
+        nodeid_to_fn = json.load(f)
+    # # # prepare tfidf node description embeddings
+    # G_lookup = nx.Graph()
+    # G_lookup.add_nodes_from(node_tuples)
+    # node_descrs = [
+    #     get_artifact_description(ntup[1], G_lookup)
+    #     for ntup in node_tuples
+    # ]
+    # node_descr_vecs = embed_string_atrs_tfidf(node_descrs)
     # # covert other feautures
     for new_node_id, ntup in enumerate(node_tuples):
         old_node_id = ntup[0]
         nattrs = ntup[1]
         node_id_numerical_map[old_node_id] = new_node_id  # assign numerical ID
+        emb_fp = os.path.join(
+            emb_dir,
+            nodeid_to_fn[old_node_id]
+        )
+        descr_emb = np.load(emb_fp)
         attribs_num = {
             'id': new_node_id,  # needed as explicit attribute here?
             'type': node_type_map[nattrs['type']],
-            'description': 0
+            'description': descr_emb
+            # 'description': 0
             # 'description': node_descr_vecs[new_node_id].todense()
             # ^ currently fails with
             # AttributeError: 'matrix' object has no attribute 'dim'
