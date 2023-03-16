@@ -2,9 +2,7 @@
 
 * [Coordination](#coordination)
 * [Usage](#usage)
-* [Data used](development.md#data)
-* [Development notes](development.md#directory-structure-overview)
-* [Progress tracking](progress_tracking.md)
+* [Development](#development)
 
 # Coordination
 
@@ -112,7 +110,19 @@ TODO
 </details>
 
 <details>
-<summary>torch geometric</summary>
+<summary>torch geometric (current - 23/03/16)</summary>
+
+* node features
+    * id (ordinal) (0..\<num\_nodes\>)
+    * type (ordinal) (dataset: 0, method: 1, model: 2, task: 3)
+    * description (transformer based embedding)
+* edge features
+    * “weight” (=number of combined use papers, see [load\_entity\_combi\_graph() scheme parameter](#load_entity_combi_graph))
+
+</details>
+
+<details>
+<summary>torch geometric (ideas/notes)</summary>
 
 * node features
     * tasks
@@ -141,3 +151,59 @@ TODO
         * data\_loaders (int (number of data loaders))
 
 </details>
+
+# Development
+
+**Note:** all relevant code should be kept inside the `contextgraph` module.
+
+Below an outline of how the code works. (**Last updated**: 23/03/16)
+
+### Preprocessing
+
+From raw unarXive and Papers with Code data to JSONL and CSV files. (Already done. Data saved in `ls3data/datasets/paperswithcode_2023/preprocessed/`)
+
+* `preprocess.py` (uses paths in `contextgraph/config.py`) calls methods from `contextgraph/preprocessing/` in the following order
+    * `crawler.py` crawls extra data from Papers with Code API that is needed but missing from their official data dumps on Github
+    * `dsets.py`  (requires `crawl_dataset_papers.py` output)  preprocesses dataset and (preliminary) task data
+    * `meths.py`  preprocesses method data
+    * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output) preprocesses task and model data
+    * `pprs.py`  (requires `preprocess_evaltables.py` output) preprocesses paper data
+    * `cit_netw.py`  (requires `preprocess_papers.py` output) adds the unarXive citation network
+    * `ppr_cntxts.py` (requires output of all of the above) adds artifact usage contexts from unarXive full-texts
+
+### networkx graph loading
+
+Methods in `contextgraph.util.graph`.
+
+**module internal methods**
+
+* `_load_node_tuples` loads node data as `(<id>, <properties>)` tuples. These tuples can directly be loaded with a networkx graph’s `add_nodes_from` method
+    * if parameter `with_contexts` is True, artifact usage context nodes will also be loaded (False by default)
+    * if parameter `entities_only` is True, only research artifact nodes will be loaded (False by default)
+* `_load_edge_tuples` loads node data as `(<id>, <properties>)` tuples. These tuples can directly be loaded with a networkx graph’s `add_edges_from` method
+    * `with_contexts` should be set to the same as wen calling `_load_node_tuples`
+    * `final_node_set`, a set of node IDs, should be provided when loading an “entity combi graph” (graph with only artifact nodes and “combining paper edges”)
+
+**methods exposed by the module**
+
+See [usage documentation above](#usage).
+
+### torch graph loading
+
+Methods in `contextgraph.util.torch`.
+
+**module internal methods**
+
+* `_get_artifact_description` returns the description attribute of a node (or generates one in case of model nodes)
+* `_embed_string_atrs_tfidf` returns tf/idf vectors for the full list of node description attributes within the graph
+
+**methods exposed by the module**
+
+* `load_full_graph`: not implemented yet
+* `load_entity_combi_graph` return the entity combi graph in a form usable with torch geometric, and operates as follows
+    * load node and edge tuples from the JSONL and CSV data
+    * converts node and edge attributes to a numerical form
+        * see [torch geometric schema](#entitiy-combi-graph) in the graph schema section above
+        * **Note**: transformer based node description emebddings are currently pre-computed with the script `precomp_descr_embs.py` — this should be integrated into a method `_embed_string_atrs_transformer` within `contextgraph.util.torch` (to save time the method should persist embeddings once generated and re-load them when called later again)
+    * creates a networkx graph from the converted node and edge tuples
+    * uses `torch_geometric.utils.convert.from_networkx` to convert the graph

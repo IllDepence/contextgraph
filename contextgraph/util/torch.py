@@ -18,7 +18,7 @@ def load_full_graph():
     raise NotImplementedError
 
 
-def get_artifact_description(node_attrs, G):
+def _get_artifact_description(node_attrs, G):
     """ Return a string that is used as the description of the given
         artifact.
     """
@@ -51,7 +51,7 @@ def get_artifact_description(node_attrs, G):
     return descr
 
 
-def embed_string_atrs_tfidf(node_attrs):
+def _embed_string_atrs_tfidf(node_attrs):
     """ Transform a list of node string attributes (one attr per node)
         into tfidf vectors
     """
@@ -103,10 +103,10 @@ def load_entity_combi_graph():
     # G_lookup = nx.Graph()
     # G_lookup.add_nodes_from(node_tuples)
     # node_descrs = [
-    #     get_artifact_description(ntup[1], G_lookup)
+    #     _get_artifact_description(ntup[1], G_lookup)
     #     for ntup in node_tuples
     # ]
-    # node_descr_vecs = embed_string_atrs_tfidf(node_descrs)
+    # node_descr_vecs = _embed_string_atrs_tfidf(node_descrs)
     # # covert other feautures
     for new_node_id, ntup in enumerate(node_tuples):
         old_node_id = ntup[0]
