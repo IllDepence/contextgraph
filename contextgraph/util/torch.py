@@ -28,6 +28,9 @@ def _get_artifact_description(node_attrs, G):
         # - the model’s name
         # - the titles of the papers that use the model
         # - the titles of the tasks the is was used for
+        #   (consider to not use task title b/c they are already part of
+        #    connected task nodes. q: connections from evaluations not
+        #    part of combi graph => therefore ok to keep?)
         task_names = set()
         for (task_id, dset) in node_attrs['evaluations']:
             task = G.nodes.get(task_id)

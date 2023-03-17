@@ -8,7 +8,7 @@ import numpy as np
 from hashlib import md5
 from sentence_transformers import SentenceTransformer
 from contextgraph.util.graph import _load_node_tuples
-from contextgraph.util.torch import get_artifact_description
+from contextgraph.util.torch import _get_artifact_description
 
 
 node_tuples = _load_node_tuples(entities_only=True)
@@ -17,7 +17,7 @@ G_lookup = nx.Graph()
 G_lookup.add_nodes_from(node_tuples)
 # get node descriptions
 node_descrs = [
-    get_artifact_description(ntup[1], G_lookup)
+    _get_artifact_description(ntup[1], G_lookup)
     for ntup in node_tuples
 ]
 
@@ -33,11 +33,11 @@ for i, ntup in enumerate(node_tuples):
     fp = os.path.join(base_dir, fn)
     # get embedding
     embedding = model.encode(node_descr)
-    # persist
+    # save to disk
     np.save(fp, embedding)
     # if i % 100 == 0:
     #     print(i)
 
-# persist node ID to fn map
+# save node ID to fn map to disk
 with open(os.path.join(base_dir, 'nodeid_to_fn.json'), 'w') as f:
     json.dump(nodeid_to_fn, f)
