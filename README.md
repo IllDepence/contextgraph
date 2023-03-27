@@ -1,6 +1,6 @@
-# CoCon
+# Contextgraph
 
-A data set capturing the combined use of research artifacts, contextualized through academic publication text.
+Code for using the **[CoCon data set](https://doi.org/10.5281/zenodo.7774292)** — data set capturing the combined use of research artifacts, contextualized through academic publication text.
 
 * [Data on Zenodo](https://doi.org/10.5281/zenodo.7774292)
 * [Code](#usage) (`contexthraph/`)
