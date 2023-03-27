@@ -1,5 +1,5 @@
 # papers with code data
-pwc_data_dir = '/home/ls3data/datasets/paperswithcode_2023/'
+pwc_data_dir = '/home/demo/datasets/paperswithcode/'
 pwc_dsets_fn = 'datasets.json'
 pwc_meths_fn = 'methods.json'
 pwc_evals_fn = 'evaluation-tables.json'
@@ -9,11 +9,13 @@ pwc_api_base_url = ('https://paperswithcode.com/api/internal/papers/'
                     '?format=json&paperdataset__dataset_id=')
 
 # unarXive data
-unarxive_paper_dir = '/opt/unarXive/unarXive-2020/papers/'
+# (see https://github.com/IllDepence/unarXive/tree/legacy_2020
+#  and https://zenodo.org/record/4313164)
+unarxive_paper_dir = '/home/demo/unarXive/papers/'
 unarxive_db_fn = 'refs.db'
 
 # preprocessed graph data
-graph_data_dir = '/home/ls3data/datasets/paperswithcode_2023/preprocessed/'
+graph_data_dir = '/home/demo/paperswithcode/preprocessed/'
 # # nodes
 graph_dsets_fn = 'datasets.jsonl'
 graph_meths_fn = 'methods.jsonl'

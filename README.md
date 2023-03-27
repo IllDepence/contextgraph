@@ -1,36 +1,25 @@
-# Overview
+# CoCon
 
-* [Coordination](#coordination)
-* [Usage](#usage)
-* [Development](#development)
+A data set capturing the combined use of research artifacts, contextualized through academic publication text.
 
-# Coordination
+* [Data on Zenodo](https://doi.org/10.5281/zenodo.7774292)
+* [Code](#usage) (`contexthraph/`)
 
-### Issues
+## Usage
 
-* Create issues to track tasks and point out problems.
+### NetworkX
 
-### Chat
-
-* Use the project’s **[Matrix channel](https://matrix.to/#/!TJpokbSjPiQzYMsiFC:kit.edu?via=kit.edu)** to communication with everyone involved.
-
-# Usage
-
-### Loading the graph data
-
-The methods described below can be impored from `contextgraph.util.graph`.  
+The methods described below can be imported from `contextgraph.util.graph`.  
 You’ll also want to `import networkx as nx` in your code.
 
 ##### load\_full\_graph()
 
-Returns a version of the graph in which nodes and endges have properties.
+Returns the full graph in which all nodes and edges types.
 
 parameter | values | default | explanation
 --------- | ------ | ------- | -----------
 shallow   | bool   | False   | True: all node and edge features except for type will be discarded.
 &zwnj;    | &zwnj; | &zwnj;  | False: nodes and edges have features according to the data available on Papers with Code.
-directed  | bool   | True    | True: Return the graph as an nx.DiGraph.
-&zwnj;    | &zwnj; | &zwnj;  | False: Return the graph as an nx.Graph.
 directed  | bool   | True    | True: Return the graph as an nx.DiGraph (for an overview of directions of edges see `_load_edge_tuples` in `contextgraph/util/graph.py`).
 &zwnj;    | &zwnj; | &zwnj;  | False: Return the graph as an nx.Graph.
 with\_contexts  | bool | False | True: Also load “context” nodes (each appearance of a used entity in a paper results in a context node connected as entity--part\_of-&gt;context--part\_of-&gt;paper). **Be aware** that this will result in *a lot* of additional nodes.
@@ -43,23 +32,10 @@ Load graph only containing the entity nodes connected by edges which represent t
 parameter | values | default | explanation
 --------- | ------ | ------- | -----------
 scheme    | {'weight', 'sequence'} | 'sequence' | 'sequence': edges have two properties (1) `linker_sequence` (a list of the co-occurrence paper IDs) and (2) `interaction_sequence` (a list of integers to be understood as “time steps”. Each integer value is the `<month>` in which a co-occurrence paper is published. The month in which the very first co-occurrence paper within the returned graph is published in month 0).
-&zwnj;    | &zwnj; | &zwnj;  | 'weight': edges have a weight attribute that denotes the number of co-occurrene papers that exist between the two entities.
-
-
-# Graph schema
-
-### Full graph
-
-(what you get using `load_full_graph()`)
-
-TODO
-
-### Entitiy combi graph
-
-(what you get using `load_entity_combi_graph()`)
+&zwnj;    | &zwnj; | &zwnj;  | 'weight': edges have a weight attribute that denotes the number of co-occurrence papers that exist between the two entities.
 
 <details>
-<summary>networkx</summary>
+<summary>graph schema</summary>
 
 * node features
     * tasks
@@ -106,11 +82,25 @@ TODO
         * month (int)
         * day (int)
         * variant\_surface\_forms (list)
+* edge features
+    * [scheme](#load_entity_combi_graph) = `weight`
+        * “weight”
+    * [scheme](#load_entity_combi_graph) = `sequence`
+        * “interaction\_sequence”
+        * “linker\_sequence”
 
 </details>
 
+### PyTorch Geometric
+
+The methods described below can be imported from `contextgraph.util.torch`.
+
+##### load\_entity\_combi\_graph()
+
+Load graph only containing the entity nodes connected by edges which represent their co-occurrence papers. Edge weights represent the number of co-occurrence papers.
+
 <details>
-<summary>torch geometric (current - 23/03/16)</summary>
+<summary>graph schema</summary>
 
 * node features
     * id (ordinal) (0..\<num\_nodes\>)
@@ -121,89 +111,9 @@ TODO
 
 </details>
 
-<details>
-<summary>torch geometric (ideas/notes)</summary>
 
-* node features
-    * tasks
-        * id (ordinal)
-        * type (ordinal)
-        * description (bag of words)
-        * categories (one-hot enconding)
-    * method
-        * id (ordinal)
-        * type (ordinal)
-        * description (bag of words)
-        * introduced\_year (int)
-        * num\_papers (int)
-    * model
-        * id (ordinal)
-        * type (ordinal)
-        * num\_papers (int) (derived from using\_paper\_titles)
-        * evaluations (int (number of evaluations))
-    * dataset
-        * id (ordinal)
-        * type (ordinal)
-        * description (bag of words)
-        * introduced\_date (int)
-        * modalities (one-hot encoding)
-        * num\_papers (int)
-        * data\_loaders (int (number of data loaders))
+## Preprocessing
 
-</details>
-
-# Development
-
-**Note:** all relevant code should be kept inside the `contextgraph` module.
-
-Below an outline of how the code works. (**Last updated**: 23/03/16)
-
-### Preprocessing
-
-From raw unarXive and Papers with Code data to JSONL and CSV files. (Already done. Data saved in `ls3data/datasets/paperswithcode_2023/preprocessed/`)
-
-* `preprocess.py` (uses paths in `contextgraph/config.py`) calls methods from `contextgraph/preprocessing/` in the following order
-    * `crawler.py` crawls extra data from Papers with Code API that is needed but missing from their official data dumps on Github
-    * `dsets.py`  (requires `crawl_dataset_papers.py` output)  preprocesses dataset and (preliminary) task data
-    * `meths.py`  preprocesses method data
-    * `evaltbls.py`  (requires `preprocess_datasets.py` and `preprocess_methods.py` output) preprocesses task and model data
-    * `pprs.py`  (requires `preprocess_evaltables.py` output) preprocesses paper data
-    * `cit_netw.py`  (requires `preprocess_papers.py` output) adds the unarXive citation network
-    * `ppr_cntxts.py` (requires output of all of the above) adds artifact usage contexts from unarXive full-texts
-
-### networkx graph loading
-
-Methods in `contextgraph.util.graph`.
-
-**module internal methods**
-
-* `_load_node_tuples` loads node data as `(<id>, <properties>)` tuples. These tuples can directly be loaded with a networkx graph’s `add_nodes_from` method
-    * if parameter `with_contexts` is True, artifact usage context nodes will also be loaded (False by default)
-    * if parameter `entities_only` is True, only research artifact nodes will be loaded (False by default)
-* `_load_edge_tuples` loads node data as `(<id>, <properties>)` tuples. These tuples can directly be loaded with a networkx graph’s `add_edges_from` method
-    * `with_contexts` should be set to the same as wen calling `_load_node_tuples`
-    * `final_node_set`, a set of node IDs, should be provided when loading an “entity combi graph” (graph with only artifact nodes and “combining paper edges”)
-
-**methods exposed by the module**
-
-See [usage documentation above](#usage).
-
-### torch graph loading
-
-Methods in `contextgraph.util.torch`.
-
-**module internal methods**
-
-* `_get_artifact_description` returns the description attribute of a node (or generates one in case of model nodes)
-* `_embed_string_atrs_tfidf` returns tf/idf vectors for the full list of node description attributes within the graph
-
-**methods exposed by the module**
-
-* `load_full_graph`: not implemented yet
-* `load_entity_combi_graph` return the entity combi graph in a form usable with torch geometric, and operates as follows
-    * load node and edge tuples from the JSONL and CSV data
-    * converts node and edge attributes to a numerical form
-        * see [torch geometric schema](#entitiy-combi-graph) in the graph schema section above
-        * **Note**: transformer based node description emebddings are currently pre-computed with the script `precomp_descr_embs.py` — this should be integrated into a method `_embed_string_atrs_transformer` within `contextgraph.util.torch` (to save time the method should persist embeddings once generated and re-load them when called later again)
-    * creates a networkx graph from the converted node and edge tuples
-    * uses `torch_geometric.utils.convert.from_networkx` to convert the graph
+* Set paths in `contexthraph/config.py`
+* Run `$ python3 preprocess.py`
+* Run `$ python3 precomp_descr_embs.py`
