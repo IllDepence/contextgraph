@@ -4,6 +4,7 @@ Code for using the **[CoCon data set](https://doi.org/10.5281/zenodo.7774292)** 
 
 * [Data on Zenodo](https://doi.org/10.5281/zenodo.7774292)
 * [Code](#usage) (`contexthraph/`)
+* [Paper](https://doi.org/10.1109/JCDL57899.2023.00016)
 
 ## Usage
 
@@ -117,3 +118,19 @@ Load graph only containing the entity nodes connected by edges which represent t
 * Set paths in `contexthraph/config.py`
 * Run `$ python3 preprocess.py`
 * Run `$ python3 precomp_descr_embs.py`
+
+## Cite as
+
+```
+@inproceedings{Saier2023cocon,
+  author    = {Saier, Tarek and Dong, Youxiang and F\"{a}rber, Michael},
+  title     = {{CoCon: A Data Set on Combined Contextualized Research Artifact Use}},
+  booktitle = {2023 ACM/IEEE Joint Conference on Digital Libraries (JCDL)},
+  year      = {2023},
+  pages     = {47--50},
+  month     = jun,
+  publisher = {IEEE Computer Society},
+  address   = {Los Alamitos, CA, USA},
+  doi       = {10.1109/JCDL57899.2023.00016}
+}
+```
