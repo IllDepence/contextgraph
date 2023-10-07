@@ -4,7 +4,7 @@ Code for using the **[CoCon data set](https://doi.org/10.5281/zenodo.7774292)** 
 
 * [Data on Zenodo](https://doi.org/10.5281/zenodo.7774292)
 * [Code](#usage) (`contexthraph/`)
-* [Paper](https://doi.org/10.1109/JCDL57899.2023.00016)
+* [Paper](https://doi.org/10.1109/JCDL57899.2023.00016) ([author copy](https://doi.org/10.48550/arXiv.2303.15193))
 
 ## Usage
 
